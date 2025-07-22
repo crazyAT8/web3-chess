@@ -1,0 +1,34 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Environment files
+.env*
+.env.local
+
+# Logs
+logs/
+*.log
+
+# Build
+dist/
+.next/
+out/
+build/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Hardhat artifacts
+artifacts/
+cache/
+typechain/
+coverage/
+
+# Misc
+*.tsbuildinfo
+*.tgz
