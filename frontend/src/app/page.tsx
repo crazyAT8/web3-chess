@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Crown, Shield, Coins, Users, Trophy, Zap } from "lucide-react"
+import { CustomConnectButton } from "@/components/wallet/ConnectButton"
 
 export default function Home() {
   return (
@@ -28,7 +29,7 @@ export default function Home() {
               Profile
             </Link>
           </nav>
-          <Button className="bg-purple-600 hover:bg-purple-700">Connect Wallet</Button>
+          <CustomConnectButton />
         </div>
       </header>
 

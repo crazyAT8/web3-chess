@@ -9,14 +9,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import { Crown, Wallet, Trophy, Coins, TrendingUp, Calendar, Award } from "lucide-react"
 import Link from "next/link"
+import { CustomConnectButton } from "@/components/wallet/ConnectButton"
+import { WalletStatus } from "@/components/wallet/WalletStatus"
+import { useWallet } from "@/hooks/useWallet"
 
 export default function Profile() {
-  const [isWalletConnected, setIsWalletConnected] = useState(false)
-
-  const connectWallet = () => {
-    // Simulate wallet connection
-    setIsWalletConnected(true)
-  }
+  const { isConnected, address, balance, chain } = useWallet()
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
@@ -38,18 +36,12 @@ export default function Profile() {
               Mint NFTs
             </Link>
           </nav>
-          <Button
-            onClick={connectWallet}
-            className={isWalletConnected ? "bg-green-600 hover:bg-green-700" : "bg-purple-600 hover:bg-purple-700"}
-          >
-            <Wallet className="mr-2 h-4 w-4" />
-            {isWalletConnected ? "Connected" : "Connect Wallet"}
-          </Button>
+          <CustomConnectButton />
         </div>
       </header>
 
       <div className="container mx-auto px-4 py-8">
-        {!isWalletConnected ? (
+        {!isConnected ? (
           <div className="max-w-md mx-auto text-center py-20">
             <Card className="bg-black/40 border-purple-800/30 backdrop-blur-sm">
               <CardHeader>
@@ -60,10 +52,7 @@ export default function Profile() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button onClick={connectWallet} className="w-full bg-purple-600 hover:bg-purple-700">
-                  <Wallet className="mr-2 h-4 w-4" />
-                  Connect Wallet
-                </Button>
+                <CustomConnectButton />
               </CardContent>
             </Card>
           </div>
@@ -92,31 +81,7 @@ export default function Profile() {
               </Card>
 
               {/* Wallet Info */}
-              <Card className="bg-black/40 border-purple-800/30 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-white text-lg flex items-center">
-                    <Wallet className="mr-2 h-5 w-5" />
-                    Wallet
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-gray-300">Address:</span>
-                    <span className="text-white font-mono text-sm">0x1234...5678</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-300">CHESS Tokens:</span>
-                    <span className="text-yellow-400 font-bold">
-                      <Coins className="inline h-4 w-4 mr-1" />
-                      1,250
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-300">ETH Balance:</span>
-                    <span className="text-white">0.5 ETH</span>
-                  </div>
-                </CardContent>
-              </Card>
+              <WalletStatus />
 
               {/* Quick Stats */}
               <Card className="bg-black/40 border-purple-800/30 backdrop-blur-sm">
