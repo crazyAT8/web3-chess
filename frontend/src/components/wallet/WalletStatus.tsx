@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Wallet, Wifi, WifiOff, Coins } from 'lucide-react';
 
 export function WalletStatus() {
-  const { isConnected, isWrongNetwork, chain, balance, shortAddress } = useWallet();
+  const { isConnected, isWrongNetwork, chainId, balance, shortAddress } = useWallet();
 
   if (!isConnected) {
     return (
@@ -46,7 +46,7 @@ export function WalletStatus() {
           {/* Network */}
           <div className="flex items-center justify-between">
             <span className="text-sm text-gray-300">Network</span>
-            <span className="text-sm text-white">{chain?.name || "Unknown"}</span>
+            <span className="text-sm text-white">{chainId || "Unknown"}</span>
           </div>
 
           {/* Address */}
@@ -63,7 +63,7 @@ export function WalletStatus() {
                 <span className="text-sm text-gray-300">Balance</span>
               </div>
               <span className="text-sm text-white">
-                {parseFloat(balance.formatted).toFixed(4)} {balance.symbol}
+                {(Number(balance.value) / 10 ** balance.decimals).toFixed(4)} {balance.symbol}
               </span>
             </div>
           )}

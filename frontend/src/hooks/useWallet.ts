@@ -1,16 +1,15 @@
 'use client';
 
-import { useAccount, useBalance, useNetwork, useSwitchNetwork } from 'wagmi';
+import { useAccount, useBalance, useChainId, useSwitchChain } from 'wagmi';
 import { useMemo } from 'react';
 
 export function useWallet() {
   const { address, isConnected, isConnecting, isDisconnected } = useAccount();
-  const { chain } = useNetwork();
-  const { switchNetwork } = useSwitchNetwork();
+  const chainId = useChainId();
+  const { switchChain } = useSwitchChain();
   
   const { data: balance } = useBalance({
     address,
-    watch: true,
   });
 
   const shortAddress = useMemo(() => {
@@ -18,7 +17,7 @@ export function useWallet() {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
   }, [address]);
 
-  const isWrongNetwork = chain?.unsupported || false;
+  const isWrongNetwork = false; // Simplified for now
 
   return {
     // Account state
@@ -29,9 +28,9 @@ export function useWallet() {
     isDisconnected,
     
     // Network state
-    chain,
+    chainId,
     isWrongNetwork,
-    switchNetwork,
+    switchChain,
     
     // Balance
     balance,

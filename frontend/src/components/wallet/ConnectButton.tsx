@@ -2,7 +2,7 @@
 
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { Button } from '@/components/ui/button';
-import { Wallet, User, LogOut } from 'lucide-react';
+import { Wallet, User } from 'lucide-react';
 
 export function CustomConnectButton() {
   return (

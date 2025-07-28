@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import { Crown, Sparkles, Coins, Zap, Star, Gem, Palette, Shuffle } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 
 const nftCollections = [
   {
@@ -164,9 +165,11 @@ export default function Mint() {
                   {nftCollections[0].items.map((item, index) => (
                     <Card key={index} className="bg-black/20 border-purple-700/30 overflow-hidden">
                       <div className="aspect-square bg-gradient-to-br from-purple-600/20 to-pink-600/20 p-8 flex items-center justify-center">
-                        <img
+                        <Image
                           src={`/placeholder.svg?height=200&width=200&query=${item.image}`}
                           alt={item.name}
+                          width={200}
+                          height={200}
                           className="w-full h-full object-contain"
                         />
                       </div>
@@ -232,9 +235,11 @@ export default function Mint() {
                   {nftCollections[1].items.map((item, index) => (
                     <Card key={index} className="bg-black/20 border-purple-700/30 overflow-hidden">
                       <div className="aspect-square bg-gradient-to-br from-blue-600/20 to-purple-600/20 p-8 flex items-center justify-center">
-                        <img
+                        <Image
                           src={`/placeholder.svg?height=200&width=200&query=${item.image}`}
                           alt={item.name}
+                          width={200}
+                          height={200}
                           className="w-full h-full object-contain"
                         />
                       </div>
@@ -300,9 +305,11 @@ export default function Mint() {
                   {nftCollections[2].items.map((item, index) => (
                     <Card key={index} className="bg-black/20 border-purple-700/30 overflow-hidden">
                       <div className="aspect-square bg-gradient-to-br from-green-600/20 to-blue-600/20 p-8 flex items-center justify-center">
-                        <img
+                        <Image
                           src={`/placeholder.svg?height=200&width=200&query=${item.image}`}
                           alt={item.name}
+                          width={200}
+                          height={200}
                           className="w-full h-full object-contain"
                         />
                       </div>

@@ -3,7 +3,7 @@ import { mainnet, sepolia, polygon, polygonMumbai } from 'wagmi/chains';
 
 export const config = getDefaultConfig({
   appName: 'ChessFi',
-  projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'YOUR_PROJECT_ID',
+  projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || '04814b397ae6bbd6d024f74e28c6a942',
   chains: [
     mainnet,
     sepolia,
