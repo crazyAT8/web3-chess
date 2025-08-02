@@ -19,7 +19,7 @@ Game.belongsTo(Tournament, { as: 'tournament', foreignKey: 'tournament_id' });
 
 // Tournament associations
 Tournament.belongsTo(User, { as: 'organizer', foreignKey: 'organizer_id' });
-Tournament.hasMany(Game, { as: 'games', foreignKey: 'tournament_id' });
+Tournament.hasMany(Game, { as: 'tournamentGames', foreignKey: 'tournament_id' });
 
 // NFT associations
 NFT.belongsTo(User, { as: 'owner', foreignKey: 'owner_id' });
