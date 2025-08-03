@@ -43,6 +43,7 @@ npx hardhat run scripts/deploy.js --network localhost
 **Purpose**: Manages individual chess games with staking and rewards.
 
 **Key Features**:
+
 - Create and join games with ETH stakes
 - Make moves and track game state
 - Automatic stake distribution on game completion
@@ -50,6 +51,7 @@ npx hardhat run scripts/deploy.js --network localhost
 - Platform fee collection
 
 **Main Functions**:
+
 - `createGame(uint256 stake)` - Create a new game with stake
 - `joinGame(uint256 gameId)` - Join an existing game
 - `makeMove(uint256 gameId, uint8 fromRow, uint8 fromCol, uint8 toRow, uint8 toCol, PieceType pieceType)` - Make a chess move
@@ -60,6 +62,7 @@ npx hardhat run scripts/deploy.js --network localhost
 **Purpose**: Manages NFT minting for chess-related digital assets.
 
 **Key Features**:
+
 - Mint individual chess pieces, boards, and avatars
 - Complete chess set minting
 - Rarity levels and metadata management
@@ -67,6 +70,7 @@ npx hardhat run scripts/deploy.js --network localhost
 - Tradeable and non-tradeable NFTs
 
 **Main Functions**:
+
 - `mintNFT(NFTType nftType, Rarity rarity, string name, string description, string imageURI, uint256 mintPrice)` - Mint individual NFT
 - `mintChessSet(string setName, string description, string imageURI, string[] pieceURIs)` - Mint complete chess set
 - `getTokensByOwner(address owner)` - Get all tokens owned by address
@@ -77,6 +81,7 @@ npx hardhat run scripts/deploy.js --network localhost
 **Purpose**: Manages chess tournaments with brackets and prize pools.
 
 **Key Features**:
+
 - Single elimination, double elimination, and round robin tournaments
 - Automatic bracket generation
 - Prize pool distribution
@@ -84,6 +89,7 @@ npx hardhat run scripts/deploy.js --network localhost
 - Player registration and match tracking
 
 **Main Functions**:
+
 - `createTournament(string name, string description, TournamentType tournamentType, uint256 entryFee, uint256 maxPlayers, uint256 startTime)` - Create tournament
 - `registerForTournament(uint256 tournamentId)` - Register for tournament
 - `completeMatch(uint256 tournamentId, uint256 matchId, address winner)` - Complete a match
@@ -94,6 +100,7 @@ npx hardhat run scripts/deploy.js --network localhost
 **Purpose**: ERC20 token for platform rewards and governance.
 
 **Key Features**:
+
 - Token rewards for game participation and wins
 - Staking rewards system
 - Authorized rewarder system
@@ -101,6 +108,7 @@ npx hardhat run scripts/deploy.js --network localhost
 - Emergency pause functionality
 
 **Main Functions**:
+
 - `rewardWin(address player)` - Reward tokens for winning
 - `rewardDraw(address player)` - Reward tokens for drawing
 - `stake(uint256 amount)` - Stake tokens for rewards
@@ -163,6 +171,7 @@ ETHERSCAN_API_KEY=your_etherscan_api_key
 ### Network Configuration
 
 The `hardhat.config.js` file includes configurations for:
+
 - Local development network
 - Sepolia testnet
 - Ethereum mainnet
@@ -247,6 +256,7 @@ const contractAddresses = {
 ### Common Issues
 
 1. **Compilation Errors**
+
    ```bash
    # Clear cache and recompile
    npx hardhat clean
@@ -254,12 +264,14 @@ const contractAddresses = {
    ```
 
 2. **Test Failures**
+
    ```bash
    # Run tests with verbose output
    npx hardhat test --verbose
    ```
 
 3. **Deployment Issues**
+
    ```bash
    # Check network configuration
    npx hardhat console --network localhost

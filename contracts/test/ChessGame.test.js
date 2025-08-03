@@ -14,7 +14,7 @@ describe("ChessGame", function () {
     
     ChessGame = await ethers.getContractFactory("ChessGame");
     chessGame = await ChessGame.deploy();
-    await chessGame.deployed();
+    await chessGame.waitForDeployment();
   });
 
   describe("Deployment", function () {
@@ -272,7 +272,7 @@ describe("ChessGame", function () {
     it("Should fail if non-owner tries to update platform fee", async function () {
       await expect(
         chessGame.connect(player1).setPlatformFee(30)
-      ).to.be.revertedWith("Ownable: caller is not the owner");
+      ).to.be.revertedWithCustomError(chessGame, "OwnableUnauthorizedAccount");
     });
 
     it("Should allow owner to update stake limits", async function () {
