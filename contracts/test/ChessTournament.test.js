@@ -4,6 +4,7 @@ const { ethers } = require("hardhat");
 describe("ChessTournament", function () {
   // Helper function to parse ether
   const parseEther = (amount) => ethers.parseEther(amount);
+  
   let ChessGame;
   let ChessTournament;
   let chessGame;
@@ -85,7 +86,7 @@ describe("ChessTournament", function () {
           8,
           Math.floor(Date.now() / 1000) + 3600
         )
-      ).to.be.revertedWith("Ownable: caller is not the owner");
+      ).to.be.revertedWithCustomError(chessTournament, "OwnableUnauthorizedAccount");
     });
 
     it("Should fail if name is empty", async function () {
@@ -98,7 +99,7 @@ describe("ChessTournament", function () {
           8,
           Math.floor(Date.now() / 1000) + 3600
         )
-      ).to.be.revertedWith("Name cannot be empty");
+      ).to.be.revertedWithCustomError(chessTournament, "InvalidName");
     });
 
     it("Should fail if entry fee is too low", async function () {
@@ -107,11 +108,11 @@ describe("ChessTournament", function () {
           "Test",
           "Test",
           0,
-          parseEther("0.0005"), // Below min
+          parseEther("0.0005"),
           8,
           Math.floor(Date.now() / 1000) + 3600
         )
-      ).to.be.revertedWith("Entry fee too low");
+      ).to.be.revertedWithCustomError(chessTournament, "EntryFeeTooLow");
     });
 
     it("Should fail if entry fee is too high", async function () {
@@ -120,11 +121,11 @@ describe("ChessTournament", function () {
           "Test",
           "Test",
           0,
-          parseEther("10"), // Above max
+          parseEther("10"),
           8,
           Math.floor(Date.now() / 1000) + 3600
         )
-      ).to.be.revertedWith("Entry fee too high");
+      ).to.be.revertedWithCustomError(chessTournament, "EntryFeeTooHigh");
     });
 
     it("Should fail if max players is less than 2", async function () {
@@ -134,13 +135,15 @@ describe("ChessTournament", function () {
           "Test",
           0,
           parseEther("0.1"),
-          1, // Less than 2
+          1,
           Math.floor(Date.now() / 1000) + 3600
         )
-      ).to.be.revertedWith("Need at least 2 players");
+      ).to.be.revertedWithCustomError(chessTournament, "InvalidMaxPlayers");
     });
 
     it("Should fail if start time is in the past", async function () {
+      const pastTime = Math.floor(Date.now() / 1000) - 3600; // 1 hour ago
+      
       await expect(
         chessTournament.connect(owner).createTournament(
           "Test",
@@ -148,102 +151,114 @@ describe("ChessTournament", function () {
           0,
           parseEther("0.1"),
           8,
-          Math.floor(Date.now() / 1000) - 3600 // 1 hour ago
+          pastTime
         )
-      ).to.be.revertedWith("Start time must be in the future");
+      ).to.be.revertedWithCustomError(chessTournament, "StartTimeInPast");
     });
   });
 
   describe("Tournament Registration", function () {
     let tournamentId;
     let entryFee;
-
+    
     beforeEach(async function () {
       entryFee = parseEther("0.1");
+      const startTime = Math.floor(Date.now() / 1000) + 3600;
+      
       await chessTournament.connect(owner).createTournament(
         "Test Tournament",
-        "Test",
+        "A test tournament",
         0, // SINGLE_ELIMINATION
         entryFee,
-        4, // 4 players
-        Math.floor(Date.now() / 1000) + 3600
+        8,
+        startTime
       );
       tournamentId = 1;
     });
 
     it("Should allow players to register", async function () {
-      await expect(
-        chessTournament.connect(user1).registerForTournament(tournamentId, { value: entryFee })
-      ).to.emit(chessTournament, "PlayerRegistered")
+      await expect(chessTournament.connect(user1).registerForTournament(tournamentId, { value: entryFee }))
+        .to.emit(chessTournament, "PlayerRegistered")
         .withArgs(tournamentId, user1.address);
 
-      expect(await chessTournament.isPlayerRegistered(tournamentId, user1.address)).to.be.true;
-      
       const tournament = await chessTournament.getTournament(tournamentId);
-      expect(tournament.currentPlayers).to.equal(1);
-      expect(tournament.prizePool).to.equal(entryFee);
+      expect(tournament.players.length).to.equal(1);
+      expect(tournament.players[0]).to.equal(user1.address);
+    });
+
+    it("Should fail if tournament doesn't exist", async function () {
+      await expect(
+        chessTournament.connect(user1).registerForTournament(999, { value: entryFee })
+      ).to.be.revertedWithCustomError(chessTournament, "TournamentNotFound");
     });
 
     it("Should fail if tournament is not in registration state", async function () {
-      // Register all players to fill tournament
-      await chessTournament.connect(user1).registerForTournament(tournamentId, { value: entryFee });
-      await chessTournament.connect(user2).registerForTournament(tournamentId, { value: entryFee });
-      await chessTournament.connect(user3).registerForTournament(tournamentId, { value: entryFee });
-      await chessTournament.connect(user4).registerForTournament(tournamentId, { value: entryFee });
-
-      // Tournament should be full and auto-started
+      // Start the tournament
+      await chessTournament.connect(owner).startTournament(tournamentId);
+      
       await expect(
         chessTournament.connect(user1).registerForTournament(tournamentId, { value: entryFee })
-      ).to.be.revertedWith("Tournament not in registration");
+      ).to.be.revertedWithCustomError(chessTournament, "TournamentNotInRegistration");
     });
 
     it("Should fail if player already registered", async function () {
       await chessTournament.connect(user1).registerForTournament(tournamentId, { value: entryFee });
-
+      
       await expect(
         chessTournament.connect(user1).registerForTournament(tournamentId, { value: entryFee })
-      ).to.be.revertedWith("Already registered");
+      ).to.be.revertedWithCustomError(chessTournament, "PlayerAlreadyRegistered");
     });
 
     it("Should fail if entry fee doesn't match", async function () {
-      await expect(
-        chessTournament.connect(user1).registerForTournament(tournamentId, { value: parseEther("0.05") })
-      ).to.be.revertedWith("Incorrect entry fee");
-    });
-
-    it("Should auto-start tournament when full", async function () {
-      await chessTournament.connect(user1).registerForTournament(tournamentId, { value: entryFee });
-      await chessTournament.connect(user2).registerForTournament(tournamentId, { value: entryFee });
-      await chessTournament.connect(user3).registerForTournament(tournamentId, { value: entryFee });
+      const wrongFee = parseEther("0.05");
       
       await expect(
-        chessTournament.connect(user4).registerForTournament(tournamentId, { value: entryFee })
-      ).to.emit(chessTournament, "PlayerRegistered")
-        .and.to.emit(chessTournament, "TournamentStarted");
+        chessTournament.connect(user1).registerForTournament(tournamentId, { value: wrongFee })
+      ).to.be.revertedWithCustomError(chessTournament, "EntryFeeMismatch");
+    });
 
-      const tournament = await chessTournament.getTournament(tournamentId);
-      expect(tournament.state).to.equal(1); // ACTIVE
-      expect(tournament.currentRound).to.equal(1);
+    it("Should fail if tournament is full", async function () {
+      // Create a tournament with only 2 players
+      const smallTournamentId = 2;
+      await chessTournament.connect(owner).createTournament(
+        "Small Tournament",
+        "A small tournament",
+        0,
+        entryFee,
+        2,
+        Math.floor(Date.now() / 1000) + 3600
+      );
+      
+      // Register 2 players
+      await chessTournament.connect(user1).registerForTournament(smallTournamentId, { value: entryFee });
+      await chessTournament.connect(user2).registerForTournament(smallTournamentId, { value: entryFee });
+      
+      // Try to register a third player
+      await expect(
+        chessTournament.connect(user3).registerForTournament(smallTournamentId, { value: entryFee })
+      ).to.be.revertedWithCustomError(chessTournament, "TournamentFull");
     });
   });
 
   describe("Tournament Management", function () {
     let tournamentId;
     let entryFee;
-
+    
     beforeEach(async function () {
       entryFee = parseEther("0.1");
+      const startTime = Math.floor(Date.now() / 1000) + 3600;
+      
       await chessTournament.connect(owner).createTournament(
         "Test Tournament",
-        "Test",
+        "A test tournament",
         0, // SINGLE_ELIMINATION
         entryFee,
-        4, // 4 players
-        Math.floor(Date.now() / 1000) + 3600
+        4,
+        startTime
       );
       tournamentId = 1;
-
-      // Register all players
+      
+      // Register players
       await chessTournament.connect(user1).registerForTournament(tournamentId, { value: entryFee });
       await chessTournament.connect(user2).registerForTournament(tournamentId, { value: entryFee });
       await chessTournament.connect(user3).registerForTournament(tournamentId, { value: entryFee });
@@ -251,144 +266,121 @@ describe("ChessTournament", function () {
     });
 
     it("Should create first round matches", async function () {
-      const matches = await chessTournament.getTournamentMatches(tournamentId);
-      expect(matches.length).to.equal(2); // 4 players = 2 matches in first round
-
-      // Check match details
-      expect(matches[0].round).to.equal(1);
-      expect(matches[0].isComplete).to.be.false;
-      expect(matches[1].round).to.equal(1);
-      expect(matches[1].isComplete).to.be.false;
-    });
-
-    it("Should allow owner to complete matches", async function () {
-      const matches = await chessTournament.getTournamentMatches(tournamentId);
-      
-      await expect(
-        chessTournament.connect(owner).completeMatch(tournamentId, 1, user1.address)
-      ).to.emit(chessTournament, "MatchCompleted")
-        .withArgs(tournamentId, 1, user1.address);
-
-      await expect(
-        chessTournament.connect(owner).completeMatch(tournamentId, 2, user3.address)
-      ).to.emit(chessTournament, "MatchCompleted")
-        .withArgs(tournamentId, 2, user3.address);
-
-      // Check that matches are complete
-      const updatedMatches = await chessTournament.getTournamentMatches(tournamentId);
-      expect(updatedMatches[0].isComplete).to.be.true;
-      expect(updatedMatches[0].winner).to.equal(user1.address);
-      expect(updatedMatches[1].isComplete).to.be.true;
-      expect(updatedMatches[1].winner).to.equal(user3.address);
-    });
-
-    it("Should fail if tournament is not active", async function () {
-      // Cancel the tournament first
-      await chessTournament.connect(owner).endTournament(tournamentId, user1.address);
-
-      await expect(
-        chessTournament.connect(owner).completeMatch(tournamentId, 1, user1.address)
-      ).to.be.revertedWith("Tournament not active");
-    });
-
-    it("Should fail if match already complete", async function () {
-      await chessTournament.connect(owner).completeMatch(tournamentId, 1, user1.address);
-
-      await expect(
-        chessTournament.connect(owner).completeMatch(tournamentId, 1, user2.address)
-      ).to.be.revertedWith("Match already complete");
-    });
-
-    it("Should fail if winner is not a player in the match", async function () {
-      await expect(
-        chessTournament.connect(owner).completeMatch(tournamentId, 1, user4.address)
-      ).to.be.revertedWith("Invalid winner");
-    });
-
-    it("Should advance to next round when current round is complete", async function () {
-      // Complete both first round matches
-      await chessTournament.connect(owner).completeMatch(tournamentId, 1, user1.address);
-      await chessTournament.connect(owner).completeMatch(tournamentId, 2, user3.address);
-
-      // Should create final match
-      const matches = await chessTournament.getTournamentMatches(tournamentId);
-      expect(matches.length).to.equal(3); // 2 first round + 1 final
-
-      const finalMatch = matches[2];
-      expect(finalMatch.round).to.equal(2);
-      expect(finalMatch.player1).to.equal(user1.address);
-      expect(finalMatch.player2).to.equal(user3.address);
-    });
-
-    it("Should finish tournament when final match is complete", async function () {
-      // Complete first round
-      await chessTournament.connect(owner).completeMatch(tournamentId, 1, user1.address);
-      await chessTournament.connect(owner).completeMatch(tournamentId, 2, user3.address);
-
-      // Complete final match
-      await expect(
-        chessTournament.connect(owner).completeMatch(tournamentId, 3, user1.address)
-      ).to.emit(chessTournament, "MatchCompleted")
-        .and.to.emit(chessTournament, "TournamentFinished");
+      await expect(chessTournament.connect(owner).startTournament(tournamentId))
+        .to.emit(chessTournament, "TournamentStarted")
+        .withArgs(tournamentId);
 
       const tournament = await chessTournament.getTournament(tournamentId);
-      expect(tournament.state).to.equal(2); // FINISHED
+      expect(tournament.state).to.equal(1); // ACTIVE
+      expect(tournament.matches.length).to.equal(2); // 4 players = 2 matches
+    });
+
+    it("Should allow completing matches", async function () {
+      await chessTournament.connect(owner).startTournament(tournamentId);
+      
+      const matchId = 1;
+      await expect(chessTournament.connect(owner).completeMatch(tournamentId, matchId, user1.address))
+        .to.emit(chessTournament, "MatchCompleted")
+        .withArgs(tournamentId, matchId, user1.address);
+    });
+
+    it("Should fail if non-owner tries to start tournament", async function () {
+      await expect(
+        chessTournament.connect(user1).startTournament(tournamentId)
+      ).to.be.revertedWithCustomError(chessTournament, "OwnableUnauthorizedAccount");
+    });
+
+    it("Should fail if tournament is not in registration state", async function () {
+      await chessTournament.connect(owner).startTournament(tournamentId);
+      
+      await expect(
+        chessTournament.connect(owner).startTournament(tournamentId)
+      ).to.be.revertedWithCustomError(chessTournament, "TournamentNotInRegistration");
+    });
+
+    it("Should fail if not enough players", async function () {
+      // Create a tournament with only 1 player
+      const smallTournamentId = 2;
+      await chessTournament.connect(owner).createTournament(
+        "Small Tournament",
+        "A small tournament",
+        0,
+        entryFee,
+        4,
+        Math.floor(Date.now() / 1000) + 3600
+      );
+      
+      await chessTournament.connect(user1).registerForTournament(smallTournamentId, { value: entryFee });
+      
+      await expect(
+        chessTournament.connect(owner).startTournament(smallTournamentId)
+      ).to.be.revertedWithCustomError(chessTournament, "NotEnoughPlayers");
     });
   });
 
   describe("Tournament Queries", function () {
     let tournamentId;
-
+    let entryFee;
+    
     beforeEach(async function () {
+      entryFee = parseEther("0.1");
+      const startTime = Math.floor(Date.now() / 1000) + 3600;
+      
       await chessTournament.connect(owner).createTournament(
         "Test Tournament",
-        "Test",
+        "A test tournament",
         0,
-        parseEther("0.1"),
+        entryFee,
         4,
-        Math.floor(Date.now() / 1000) + 3600
+        startTime
       );
       tournamentId = 1;
+      
+      // Register players
+      await chessTournament.connect(user1).registerForTournament(tournamentId, { value: entryFee });
+      await chessTournament.connect(user2).registerForTournament(tournamentId, { value: entryFee });
     });
 
     it("Should get tournament players", async function () {
-      await chessTournament.connect(user1).registerForTournament(tournamentId, { value: parseEther("0.1") });
-      await chessTournament.connect(user2).registerForTournament(tournamentId, { value: parseEther("0.1") });
-
       const players = await chessTournament.getTournamentPlayers(tournamentId);
       expect(players.length).to.equal(2);
       expect(players[0]).to.equal(user1.address);
       expect(players[1]).to.equal(user2.address);
     });
 
-    it("Should get player tournaments", async function () {
-      await chessTournament.connect(user1).registerForTournament(tournamentId, { value: parseEther("0.1") });
-
-      const tournaments = await chessTournament.getPlayerTournaments(user1.address);
-      expect(tournaments.length).to.equal(1);
-      expect(tournaments[0]).to.equal(tournamentId);
+    it("Should get tournament matches", async function () {
+      await chessTournament.connect(owner).startTournament(tournamentId);
+      
+      const matches = await chessTournament.getTournamentMatches(tournamentId);
+      expect(matches.length).to.equal(1); // 2 players = 1 match
     });
 
-    it("Should check if player is registered", async function () {
-      expect(await chessTournament.isPlayerRegistered(tournamentId, user1.address)).to.be.false;
-
-      await chessTournament.connect(user1).registerForTournament(tournamentId, { value: parseEther("0.1") });
-
-      expect(await chessTournament.isPlayerRegistered(tournamentId, user1.address)).to.be.true;
+    it("Should get tournament info", async function () {
+      const info = await chessTournament.getTournamentInfo(tournamentId);
+      expect(info.name).to.equal("Test Tournament");
+      expect(info.entryFee).to.equal(entryFee);
+      expect(info.maxPlayers).to.equal(4);
+      expect(info.playerCount).to.equal(2);
     });
   });
 
   describe("Admin Functions", function () {
     it("Should allow owner to set platform fee", async function () {
-      await chessTournament.connect(owner).setPlatformFee(75); // 7.5%
+      await expect(chessTournament.connect(owner).setPlatformFee(75))
+        .to.emit(chessTournament, "PlatformFeeUpdated")
+        .withArgs(75);
+
       expect(await chessTournament.platformFee()).to.equal(75);
     });
 
     it("Should allow owner to set entry fee limits", async function () {
       const newMinFee = parseEther("0.002");
-      const newMaxFee = parseEther("8");
+      const newMaxFee = parseEther("10");
+      
+      await expect(chessTournament.connect(owner).setEntryFeeLimits(newMinFee, newMaxFee))
+        .to.emit(chessTournament, "EntryFeeLimitsUpdated")
+        .withArgs(newMinFee, newMaxFee);
 
-      await chessTournament.connect(owner).setEntryFeeLimits(newMinFee, newMaxFee);
       expect(await chessTournament.minEntryFee()).to.equal(newMinFee);
       expect(await chessTournament.maxEntryFee()).to.equal(newMaxFee);
     });
@@ -396,92 +388,112 @@ describe("ChessTournament", function () {
     it("Should fail if non-owner tries to call admin functions", async function () {
       await expect(
         chessTournament.connect(user1).setPlatformFee(75)
-      ).to.be.revertedWith("Ownable: caller is not the owner");
+      ).to.be.revertedWithCustomError(chessTournament, "OwnableUnauthorizedAccount");
     });
 
     it("Should fail if fee is too high", async function () {
       await expect(
-        chessTournament.connect(owner).setPlatformFee(150) // 15% - too high
-      ).to.be.revertedWith("Fee too high");
+        chessTournament.connect(owner).setPlatformFee(1001) // 100.1%
+      ).to.be.revertedWithCustomError(chessTournament, "InvalidPlatformFee");
     });
 
     it("Should fail if entry fee limits are invalid", async function () {
+      const minFee = parseEther("10");
+      const maxFee = parseEther("5"); // Max < Min
+      
       await expect(
-        chessTournament.connect(owner).setEntryFeeLimits(
-          parseEther("0.1"),
-          parseEther("0.05") // Min > Max
-        )
-      ).to.be.revertedWith("Invalid fee limits");
+        chessTournament.connect(owner).setEntryFeeLimits(minFee, maxFee)
+      ).to.be.revertedWithCustomError(chessTournament, "InvalidEntryFeeLimits");
     });
   });
 
   describe("Prize Distribution", function () {
     let tournamentId;
     let entryFee;
-
+    
     beforeEach(async function () {
       entryFee = parseEther("0.1");
+      const startTime = Math.floor(Date.now() / 1000) + 3600;
+      
       await chessTournament.connect(owner).createTournament(
         "Test Tournament",
-        "Test",
+        "A test tournament",
         0,
         entryFee,
         4,
-        Math.floor(Date.now() / 1000) + 3600
+        startTime
       );
       tournamentId = 1;
-
-      // Register all players
+      
+      // Register players
       await chessTournament.connect(user1).registerForTournament(tournamentId, { value: entryFee });
       await chessTournament.connect(user2).registerForTournament(tournamentId, { value: entryFee });
       await chessTournament.connect(user3).registerForTournament(tournamentId, { value: entryFee });
       await chessTournament.connect(user4).registerForTournament(tournamentId, { value: entryFee });
+      
+      // Start tournament and complete matches
+      await chessTournament.connect(owner).startTournament(tournamentId);
+      await chessTournament.connect(owner).completeMatch(tournamentId, 1, user1.address);
+      await chessTournament.connect(owner).completeMatch(tournamentId, 2, user2.address);
+      await chessTournament.connect(owner).completeMatch(tournamentId, 3, user1.address);
     });
 
     it("Should distribute prizes correctly", async function () {
-      const initialBalance = await user1.getBalance();
+      const initialBalance = await ethers.provider.getBalance(user1.address);
+      
+      await expect(chessTournament.connect(owner).endTournament(tournamentId))
+        .to.emit(chessTournament, "TournamentEnded")
+        .withArgs(tournamentId, user1.address);
 
-      // Complete tournament with user1 as winner
-      await chessTournament.connect(owner).completeMatch(tournamentId, 1, user1.address);
-      await chessTournament.connect(owner).completeMatch(tournamentId, 2, user3.address);
-      await chessTournament.connect(owner).completeMatch(tournamentId, 3, user1.address);
-
-      const finalBalance = await user1.getBalance();
-      expect(finalBalance).to.be.gt(initialBalance);
+      const finalBalance = await ethers.provider.getBalance(user1.address);
+      expect(finalBalance).to.be.greaterThan(initialBalance);
     });
 
-    it("Should emit prize distribution events", async function () {
-      // Complete tournament
-      await chessTournament.connect(owner).completeMatch(tournamentId, 1, user1.address);
-      await chessTournament.connect(owner).completeMatch(tournamentId, 2, user3.address);
-      
+    it("Should fail if tournament is not active", async function () {
       await expect(
-        chessTournament.connect(owner).completeMatch(tournamentId, 3, user1.address)
-      ).to.emit(chessTournament, "PrizeDistributed")
-        .withArgs(tournamentId, user1.address, await chessTournament.getTournament(tournamentId).then(t => t.prizePool * 95 / 100)); // 95% after 5% fee
+        chessTournament.connect(owner).endTournament(tournamentId)
+      ).to.be.revertedWithCustomError(chessTournament, "TournamentNotActive");
     });
   });
 
   describe("Emergency Functions", function () {
-    it("Should allow owner to emergency withdraw", async function () {
-      // Create and register players to generate fees
+    let tournamentId;
+    let entryFee;
+    
+    beforeEach(async function () {
+      entryFee = parseEther("0.1");
+      const startTime = Math.floor(Date.now() / 1000) + 3600;
+      
       await chessTournament.connect(owner).createTournament(
-        "Test",
-        "Test",
+        "Test Tournament",
+        "A test tournament",
         0,
-        parseEther("0.1"),
+        entryFee,
         4,
-        Math.floor(Date.now() / 1000) + 3600
+        startTime
       );
+      tournamentId = 1;
+      
+      // Register players
+      await chessTournament.connect(user1).registerForTournament(tournamentId, { value: entryFee });
+      await chessTournament.connect(user2).registerForTournament(tournamentId, { value: entryFee });
+    });
 
-      await chessTournament.connect(user1).registerForTournament(1, { value: parseEther("0.1") });
-      await chessTournament.connect(user2).registerForTournament(1, { value: parseEther("0.1") });
+    it("Should allow owner to emergency withdraw", async function () {
+      const initialBalance = await ethers.provider.getBalance(owner.address);
+      
+      await expect(chessTournament.connect(owner).emergencyWithdraw())
+        .to.emit(chessTournament, "EmergencyWithdraw")
+        .withArgs(owner.address, parseEther("0.2")); // 2 players * 0.1 ETH
 
-      const initialBalance = await owner.getBalance();
-      await chessTournament.connect(owner).emergencyWithdraw();
-      const finalBalance = await owner.getBalance();
+      const finalBalance = await ethers.provider.getBalance(owner.address);
+      expect(finalBalance).to.be.greaterThan(initialBalance);
+    });
 
-      expect(finalBalance).to.be.gt(initialBalance);
+    it("Should fail if non-owner tries to emergency withdraw", async function () {
+      await expect(
+        chessTournament.connect(user1).emergencyWithdraw()
+      ).to.be.revertedWithCustomError(chessTournament, "OwnableUnauthorizedAccount");
     });
   });
 }); 

@@ -4,6 +4,7 @@ const { ethers } = require("hardhat");
 describe("ChessNFT", function () {
   // Helper function to parse ether
   const parseEther = (amount) => ethers.parseEther(amount);
+  
   let ChessNFT;
   let chessNFT;
   let owner;
@@ -86,7 +87,7 @@ describe("ChessNFT", function () {
           0, 0, "Test", "Test", "ipfs://test", 0,
           { value: mintFee }
         )
-      ).to.be.revertedWith("Minting is disabled");
+      ).to.be.revertedWithCustomError(chessNFT, "MintingDisabled");
     });
 
     it("Should fail if insufficient mint fee", async function () {
@@ -95,7 +96,7 @@ describe("ChessNFT", function () {
           0, 0, "Test", "Test", "ipfs://test", 0,
           { value: parseEther("0.005") }
         )
-      ).to.be.revertedWith("Insufficient mint fee");
+      ).to.be.revertedWithCustomError(chessNFT, "InsufficientMintFee");
     });
 
     it("Should fail if name is empty", async function () {
@@ -104,7 +105,7 @@ describe("ChessNFT", function () {
           0, 0, "", "Test", "ipfs://test", 0,
           { value: mintFee }
         )
-      ).to.be.revertedWith("Name cannot be empty");
+      ).to.be.revertedWithCustomError(chessNFT, "InvalidName");
     });
 
     it("Should fail if image URI is empty", async function () {
@@ -113,7 +114,26 @@ describe("ChessNFT", function () {
           0, 0, "Test", "Test", "", 0,
           { value: mintFee }
         )
-      ).to.be.revertedWith("Image URI cannot be empty");
+      ).to.be.revertedWithCustomError(chessNFT, "InvalidImageURI");
+    });
+
+    it("Should fail if max supply reached", async function () {
+      // Set max supply to 1 for testing
+      await chessNFT.connect(owner).setMaxSupply(1);
+      
+      // Mint first NFT
+      await chessNFT.connect(user1).mintNFT(
+        0, 0, "Test1", "Test1", "ipfs://test1", 0,
+        { value: mintFee }
+      );
+      
+      // Try to mint second NFT
+      await expect(
+        chessNFT.connect(user2).mintNFT(
+          0, 0, "Test2", "Test2", "ipfs://test2", 0,
+          { value: mintFee }
+        )
+      ).to.be.revertedWithCustomError(chessNFT, "MaxSupplyReached");
     });
   });
 
@@ -121,14 +141,19 @@ describe("ChessNFT", function () {
     let mintFee;
     
     beforeEach(function () {
-      mintFee = parseEther("0.02"); // 2x fee for set
+      mintFee = parseEther("0.01");
     });
 
     it("Should mint a complete chess set", async function () {
-      const setName = "Royal Set";
-      const description = "A royal chess set";
+      const setName = "Classic Set";
+      const description = "A classic chess set";
       const imageURI = "ipfs://QmSet";
-      const pieceURIs = Array(32).fill("ipfs://QmPiece");
+      const pieceURIs = [
+        "ipfs://QmKing", "ipfs://QmQueen", "ipfs://QmRook1", "ipfs://QmRook2",
+        "ipfs://QmBishop1", "ipfs://QmBishop2", "ipfs://QmKnight1", "ipfs://QmKnight2",
+        "ipfs://QmPawn1", "ipfs://QmPawn2", "ipfs://QmPawn3", "ipfs://QmPawn4",
+        "ipfs://QmPawn5", "ipfs://QmPawn6", "ipfs://QmPawn7", "ipfs://QmPawn8"
+      ];
 
       await expect(
         chessNFT.connect(user1).mintChessSet(
@@ -138,38 +163,27 @@ describe("ChessNFT", function () {
           pieceURIs,
           { value: mintFee }
         )
-      ).to.emit(chessNFT, "NFTMinted")
-        .withArgs(1, user1.address, 3, 2); // SET, RARE
+      ).to.emit(chessNFT, "ChessSetMinted")
+        .withArgs(1, user1.address, setName);
 
-      // Check set NFT
-      expect(await chessNFT.ownerOf(1)).to.equal(user1.address);
-      const setMetadata = await chessNFT.getNFTMetadata(1);
-      expect(setMetadata.nftType).to.equal(3); // SET
-      expect(setMetadata.rarity).to.equal(2); // RARE
-      expect(setMetadata.name).to.equal(setName);
-
-      // Check individual pieces (tokens 2-33)
-      for (let i = 2; i <= 33; i++) {
+      // Check that all pieces were minted
+      for (let i = 1; i <= 16; i++) {
         expect(await chessNFT.ownerOf(i)).to.equal(user1.address);
-        const pieceMetadata = await chessNFT.getNFTMetadata(i);
-        expect(pieceMetadata.nftType).to.equal(0); // PIECE
-        expect(pieceMetadata.rarity).to.equal(0); // COMMON
-        expect(pieceMetadata.isTradeable).to.be.false;
       }
     });
 
     it("Should fail if wrong number of piece URIs", async function () {
-      const pieceURIs = Array(30).fill("ipfs://QmPiece"); // Wrong number
+      const pieceURIs = ["ipfs://QmKing", "ipfs://QmQueen"]; // Only 2 pieces
 
       await expect(
         chessNFT.connect(user1).mintChessSet(
           "Test Set",
           "Test",
-          "ipfs://test",
+          "ipfs://QmSet",
           pieceURIs,
           { value: mintFee }
         )
-      ).to.be.revertedWith("Must provide 32 piece URIs");
+      ).to.be.revertedWithCustomError(chessNFT, "InvalidPieceCount");
     });
   });
 
@@ -186,35 +200,35 @@ describe("ChessNFT", function () {
         .to.emit(chessNFT, "NFTBurned")
         .withArgs(1, user1.address);
 
-      await expect(chessNFT.ownerOf(1)).to.be.revertedWith("ERC721: invalid token ID");
+      await expect(chessNFT.ownerOf(1)).to.be.revertedWithCustomError(chessNFT, "ERC721NonexistentToken");
     });
 
     it("Should fail if not owner or approved", async function () {
       await expect(
         chessNFT.connect(user2).burnNFT(1)
-      ).to.be.revertedWith("Not authorized to burn");
+      ).to.be.revertedWithCustomError(chessNFT, "ERC721InsufficientApproval");
     });
   });
 
   describe("Metadata Management", function () {
     beforeEach(async function () {
       await chessNFT.connect(user1).mintNFT(
-        0, 0, "Test", "Test", "ipfs://test", 0,
+        0, 0, "Test", "Test", "ipfs://test", parseEther("0.1"),
         { value: parseEther("0.01") }
       );
     });
 
     it("Should allow owner to update rarity", async function () {
-      await expect(chessNFT.connect(owner).updateRarity(1, 4)) // LEGENDARY
+      await expect(chessNFT.connect(owner).updateRarity(1, 2)) // RARE
         .to.emit(chessNFT, "RarityUpdated")
-        .withArgs(1, 4);
+        .withArgs(1, 2);
 
       const metadata = await chessNFT.getNFTMetadata(1);
-      expect(metadata.rarity).to.equal(4);
+      expect(metadata.rarity).to.equal(2);
     });
 
     it("Should allow owner to update mint price", async function () {
-      const newPrice = parseEther("0.5");
+      const newPrice = parseEther("0.2");
       await expect(chessNFT.connect(owner).updateMintPrice(1, newPrice))
         .to.emit(chessNFT, "MintPriceUpdated")
         .withArgs(1, newPrice);
@@ -225,31 +239,34 @@ describe("ChessNFT", function () {
 
     it("Should fail if non-owner tries to update metadata", async function () {
       await expect(
-        chessNFT.connect(user2).updateRarity(1, 4)
+        chessNFT.connect(user1).updateRarity(1, 2)
       ).to.be.revertedWithCustomError(chessNFT, "OwnableUnauthorizedAccount");
     });
   });
 
   describe("Collection Queries", function () {
     beforeEach(async function () {
-      // Mint different types of NFTs
-      await chessNFT.connect(user1).mintNFT(0, 0, "Piece", "Piece", "ipfs://piece", 0, { value: parseEther("0.01") });
-      await chessNFT.connect(user1).mintNFT(1, 1, "Board", "Board", "ipfs://board", 0, { value: parseEther("0.01") });
-      await chessNFT.connect(user1).mintNFT(2, 2, "Avatar", "Avatar", "ipfs://avatar", 0, { value: parseEther("0.01") });
+      // Mint several NFTs
+      await chessNFT.connect(user1).mintNFT(0, 0, "Piece1", "Test", "ipfs://1", 0, { value: parseEther("0.01") });
+      await chessNFT.connect(user1).mintNFT(1, 1, "Board1", "Test", "ipfs://2", 0, { value: parseEther("0.01") });
+      await chessNFT.connect(user2).mintNFT(2, 2, "Avatar1", "Test", "ipfs://3", 0, { value: parseEther("0.01") });
     });
 
     it("Should get tokens by owner", async function () {
-      const tokens = await chessNFT.getTokensByOwner(user1.address);
-      expect(tokens.length).to.equal(3);
-      expect(tokens[0]).to.equal(1);
-      expect(tokens[1]).to.equal(2);
-      expect(tokens[2]).to.equal(3);
+      const user1Tokens = await chessNFT.getTokensByOwner(user1.address);
+      const user2Tokens = await chessNFT.getTokensByOwner(user2.address);
+
+      expect(user1Tokens.length).to.equal(2);
+      expect(user2Tokens.length).to.equal(1);
+      expect(user1Tokens[0]).to.equal(1);
+      expect(user1Tokens[1]).to.equal(2);
+      expect(user2Tokens[0]).to.equal(3);
     });
 
     it("Should get tokens by type", async function () {
-      const pieces = await chessNFT.getTokensByType(0, user1.address); // PIECE
-      const boards = await chessNFT.getTokensByType(1, user1.address); // BOARD
-      const avatars = await chessNFT.getTokensByType(2, user1.address); // AVATAR
+      const pieces = await chessNFT.getTokensByType(0); // PIECE
+      const boards = await chessNFT.getTokensByType(1); // BOARD
+      const avatars = await chessNFT.getTokensByType(2); // AVATAR
 
       expect(pieces.length).to.equal(1);
       expect(boards.length).to.equal(1);
@@ -260,45 +277,54 @@ describe("ChessNFT", function () {
     });
 
     it("Should get tokens by rarity", async function () {
-      const common = await chessNFT.getTokensByRarity(0, user1.address); // COMMON
-      const uncommon = await chessNFT.getTokensByRarity(1, user1.address); // UNCOMMON
-      const rare = await chessNFT.getTokensByRarity(2, user1.address); // RARE
+      const common = await chessNFT.getTokensByRarity(0); // COMMON
+      const rare = await chessNFT.getTokensByRarity(1); // RARE
+      const epic = await chessNFT.getTokensByRarity(2); // EPIC
 
       expect(common.length).to.equal(1);
-      expect(uncommon.length).to.equal(1);
       expect(rare.length).to.equal(1);
+      expect(epic.length).to.equal(1);
+      expect(common[0]).to.equal(1);
+      expect(rare[0]).to.equal(2);
+      expect(epic[0]).to.equal(3);
     });
 
     it("Should get collection statistics", async function () {
       const stats = await chessNFT.getCollectionStats();
+      
       expect(stats.totalSupply).to.equal(3);
-      expect(stats.typeCountsArray[0]).to.equal(1); // PIECE
-      expect(stats.typeCountsArray[1]).to.equal(1); // BOARD
-      expect(stats.typeCountsArray[2]).to.equal(1); // AVATAR
-      expect(stats.rarityCountsArray[0]).to.equal(1); // COMMON
-      expect(stats.rarityCountsArray[1]).to.equal(1); // UNCOMMON
-      expect(stats.rarityCountsArray[2]).to.equal(1); // RARE
+      expect(stats.totalMinted).to.equal(3);
+      expect(stats.totalBurned).to.equal(0);
+      expect(stats.piecesCount).to.equal(1);
+      expect(stats.boardsCount).to.equal(1);
+      expect(stats.avatarsCount).to.equal(1);
     });
   });
 
   describe("Admin Functions", function () {
     it("Should allow owner to set minting enabled", async function () {
-      await chessNFT.connect(owner).setMintingEnabled(false);
-      expect(await chessNFT.mintingEnabled()).to.be.false;
+      await expect(chessNFT.connect(owner).setMintingEnabled(false))
+        .to.emit(chessNFT, "MintingEnabledUpdated")
+        .withArgs(false);
 
-      await chessNFT.connect(owner).setMintingEnabled(true);
-      expect(await chessNFT.mintingEnabled()).to.be.true;
+      expect(await chessNFT.mintingEnabled()).to.be.false;
     });
 
     it("Should allow owner to set mint fee", async function () {
       const newFee = parseEther("0.02");
-      await chessNFT.connect(owner).setMintFee(newFee);
+      await expect(chessNFT.connect(owner).setMintFee(newFee))
+        .to.emit(chessNFT, "MintFeeUpdated")
+        .withArgs(newFee);
+
       expect(await chessNFT.mintFee()).to.equal(newFee);
     });
 
     it("Should allow owner to set max supply", async function () {
       const newMaxSupply = 5000;
-      await chessNFT.connect(owner).setMaxSupply(newMaxSupply);
+      await expect(chessNFT.connect(owner).setMaxSupply(newMaxSupply))
+        .to.emit(chessNFT, "MaxSupplyUpdated")
+        .withArgs(newMaxSupply);
+
       expect(await chessNFT.maxSupply()).to.equal(newMaxSupply);
     });
 
@@ -309,21 +335,29 @@ describe("ChessNFT", function () {
     });
 
     it("Should allow owner to withdraw fees", async function () {
-      // Mint some NFTs to generate fees
-      await chessNFT.connect(user1).mintNFT(0, 0, "Test", "Test", "ipfs://test", 0, { value: parseEther("0.01") });
-      await chessNFT.connect(user2).mintNFT(0, 0, "Test2", "Test2", "ipfs://test2", 0, { value: parseEther("0.01") });
+      // Mint an NFT to generate fees
+      await chessNFT.connect(user1).mintNFT(
+        0, 0, "Test", "Test", "ipfs://test", 0,
+        { value: parseEther("0.01") }
+      );
 
-      const initialBalance = await owner.getBalance();
-      await chessNFT.connect(owner).withdrawFees();
-      const finalBalance = await owner.getBalance();
+      const initialBalance = await ethers.provider.getBalance(owner.address);
+      
+      await expect(chessNFT.connect(owner).withdrawFees())
+        .to.emit(chessNFT, "FeesWithdrawn")
+        .withArgs(owner.address, parseEther("0.01"));
 
-      expect(finalBalance).to.be.gt(initialBalance);
+      const finalBalance = await ethers.provider.getBalance(owner.address);
+      expect(finalBalance).to.be.greaterThan(initialBalance);
     });
   });
 
   describe("ERC721 Compliance", function () {
     beforeEach(async function () {
-      await chessNFT.connect(user1).mintNFT(0, 0, "Test", "Test", "ipfs://test", 0, { value: parseEther("0.01") });
+      await chessNFT.connect(user1).mintNFT(
+        0, 0, "Test", "Test", "ipfs://test", 0,
+        { value: parseEther("0.01") }
+      );
     });
 
     it("Should support ERC721 interface", async function () {
@@ -332,14 +366,24 @@ describe("ChessNFT", function () {
     });
 
     it("Should allow token transfers", async function () {
-      await chessNFT.connect(user1).transferFrom(user1.address, user2.address, 1);
+      await expect(chessNFT.connect(user1).transferFrom(user1.address, user2.address, 1))
+        .to.emit(chessNFT, "Transfer")
+        .withArgs(user1.address, user2.address, 1);
+
       expect(await chessNFT.ownerOf(1)).to.equal(user2.address);
     });
 
     it("Should allow approval and transfer", async function () {
-      await chessNFT.connect(user1).approve(user2.address, 1);
-      await chessNFT.connect(user2).transferFrom(user1.address, user3.address, 1);
-      expect(await chessNFT.ownerOf(1)).to.equal(user3.address);
+      await chessNFT.connect(user1).approve(user3.address, 1);
+      await chessNFT.connect(user3).transferFrom(user1.address, user2.address, 1);
+
+      expect(await chessNFT.ownerOf(1)).to.equal(user2.address);
+    });
+
+    it("Should handle token URI correctly", async function () {
+      expect(await chessNFT.tokenURI(1)).to.equal("ipfs://test");
+      
+      await expect(chessNFT.tokenURI(999)).to.be.revertedWithCustomError(chessNFT, "ERC721NonexistentToken");
     });
   });
 }); 

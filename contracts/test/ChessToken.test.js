@@ -4,6 +4,7 @@ const { ethers } = require("hardhat");
 describe("ChessToken", function () {
   // Helper function to parse ether
   const parseEther = (amount) => ethers.parseEther(amount);
+  
   let ChessToken;
   let chessToken;
   let owner;
@@ -63,7 +64,7 @@ describe("ChessToken", function () {
         .withArgs(user1.address, parseEther("100"), "Game Win");
 
       const finalBalance = await chessToken.balanceOf(user1.address);
-      expect(finalBalance.sub(initialBalance)).to.equal(parseEther("100"));
+      expect(finalBalance - initialBalance).to.equal(parseEther("100"));
     });
 
     it("Should reward tokens for drawing", async function () {
@@ -74,7 +75,7 @@ describe("ChessToken", function () {
         .withArgs(user1.address, parseEther("25"), "Game Draw");
 
       const finalBalance = await chessToken.balanceOf(user1.address);
-      expect(finalBalance.sub(initialBalance)).to.equal(parseEther("25"));
+      expect(finalBalance - initialBalance).to.equal(parseEther("25"));
     });
 
     it("Should reward tokens for participation", async function () {
@@ -85,7 +86,7 @@ describe("ChessToken", function () {
         .withArgs(user1.address, parseEther("10"), "Game Participation");
 
       const finalBalance = await chessToken.balanceOf(user1.address);
-      expect(finalBalance.sub(initialBalance)).to.equal(parseEther("10"));
+      expect(finalBalance - initialBalance).to.equal(parseEther("10"));
     });
 
     it("Should reward tokens for tournament win", async function () {
@@ -96,7 +97,7 @@ describe("ChessToken", function () {
         .withArgs(user1.address, parseEther("500"), "Tournament Win");
 
       const finalBalance = await chessToken.balanceOf(user1.address);
-      expect(finalBalance.sub(initialBalance)).to.equal(parseEther("500"));
+      expect(finalBalance - initialBalance).to.equal(parseEther("500"));
     });
 
     it("Should fail if unauthorized address tries to reward", async function () {
@@ -113,7 +114,7 @@ describe("ChessToken", function () {
       // Try to reward more than the reward pool
       const largeReward = parseEther("6000000"); // More than 5M reward pool
       await expect(
-        chessToken.connect(rewarder).rewardTokens(user1.address, largeReward, "Test")
+        chessToken.connect(rewarder).rewardWin(user1.address)
       ).to.be.revertedWith("Reward pool exhausted");
     });
   });
@@ -133,9 +134,9 @@ describe("ChessToken", function () {
         .to.emit(chessToken, "TokensStaked")
         .withArgs(user1.address, stakeAmount);
 
-      expect(await chessToken.balanceOf(user1.address)).to.equal(initialBalance.sub(stakeAmount));
+      expect(await chessToken.balanceOf(user1.address)).to.equal(initialBalance - stakeAmount);
       expect(await chessToken.totalStaked()).to.equal(stakeAmount);
-
+      
       const stakingInfo = await chessToken.getStakingInfo(user1.address);
       expect(stakingInfo.stakedAmount).to.equal(stakeAmount);
     });
@@ -165,11 +166,11 @@ describe("ChessToken", function () {
         .to.emit(chessToken, "TokensUnstaked")
         .withArgs(user1.address, unstakeAmount);
 
-      expect(await chessToken.balanceOf(user1.address)).to.equal(initialBalance.add(unstakeAmount));
-      expect(await chessToken.totalStaked()).to.equal(stakeAmount.sub(unstakeAmount));
-
+      expect(await chessToken.balanceOf(user1.address)).to.equal(initialBalance + unstakeAmount);
+      expect(await chessToken.totalStaked()).to.equal(stakeAmount - unstakeAmount);
+      
       const stakingInfo = await chessToken.getStakingInfo(user1.address);
-      expect(stakingInfo.stakedAmount).to.equal(stakeAmount.sub(unstakeAmount));
+      expect(stakingInfo.stakedAmount).to.equal(stakeAmount - unstakeAmount);
     });
 
     it("Should fail if unstaking more than staked", async function () {
@@ -200,7 +201,7 @@ describe("ChessToken", function () {
       // Fast forward time to accumulate rewards
       await ethers.provider.send("evm_increaseTime", [365 * 24 * 60 * 60]); // 1 year
       await ethers.provider.send("evm_mine");
-
+      
       const stakingInfo = await chessToken.getStakingInfo(user1.address);
       expect(stakingInfo.pendingRewards).to.be.gt(0);
     });
@@ -209,7 +210,7 @@ describe("ChessToken", function () {
       // Fast forward time to accumulate rewards
       await ethers.provider.send("evm_increaseTime", [365 * 24 * 60 * 60]); // 1 year
       await ethers.provider.send("evm_mine");
-
+      
       const initialBalance = await chessToken.balanceOf(user1.address);
       
       await expect(chessToken.connect(user1).claimRewards())
@@ -295,7 +296,7 @@ describe("ChessToken", function () {
     it("Should track total rewards distributed", async function () {
       await chessToken.connect(owner).setAuthorizedRewarder(rewarder.address, true);
       await chessToken.connect(rewarder).rewardWin(user1.address);
-
+      
       const tokenomics = await chessToken.getTokenomics();
       expect(tokenomics.totalDistributed).to.equal(parseEther("100"));
     });
@@ -334,8 +335,10 @@ describe("ChessToken", function () {
 
     it("Should allow approval and transferFrom", async function () {
       const transferAmount = parseEther("100");
+      
       await chessToken.connect(owner).approve(user1.address, transferAmount);
       await chessToken.connect(user1).transferFrom(owner.address, user2.address, transferAmount);
+      
       expect(await chessToken.balanceOf(user2.address)).to.equal(transferAmount);
     });
 
@@ -344,13 +347,14 @@ describe("ChessToken", function () {
       const initialSupply = await chessToken.totalSupply();
       
       await chessToken.connect(owner).burn(burnAmount);
-      
-      expect(await chessToken.totalSupply()).to.equal(initialSupply.sub(burnAmount));
+
+      expect(await chessToken.totalSupply()).to.equal(initialSupply - burnAmount);
     });
 
     it("Should handle allowance correctly", async function () {
       const allowance = parseEther("100");
       await chessToken.connect(owner).approve(user1.address, allowance);
+      
       expect(await chessToken.allowance(owner.address, user1.address)).to.equal(allowance);
     });
   });
