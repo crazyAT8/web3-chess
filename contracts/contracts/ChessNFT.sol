@@ -12,6 +12,17 @@ import "@openzeppelin/contracts/utils/Strings.sol";
  * @dev NFT contract for chess pieces, boards, and player avatars
  */
 contract ChessNFT is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard {
+    // Custom errors
+    error MintingDisabled();
+    error InsufficientMintFee();
+    error MaxSupplyReached();
+    error InvalidName();
+    error InvalidImageURI();
+    error InvalidPieceCount();
+    error NotAuthorizedToBurn();
+    error TokenDoesNotExist();
+    error InvalidRarity();
+    error InvalidMintPrice();
 
     // NFT Types
     enum NFTType {
@@ -48,6 +59,11 @@ contract ChessNFT is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard {
     event NFTBurned(uint256 indexed tokenId, address indexed owner);
     event RarityUpdated(uint256 indexed tokenId, Rarity newRarity);
     event MintPriceUpdated(uint256 indexed tokenId, uint256 newPrice);
+    event ChessSetMinted(uint256 indexed tokenId, address indexed owner, string setName);
+    event MintingEnabledUpdated(bool enabled);
+    event MintFeeUpdated(uint256 newFee);
+    event MaxSupplyUpdated(uint256 newMaxSupply);
+    event FeesWithdrawn(address indexed owner, uint256 amount);
 
     // State variables
     uint256 private _tokenIds;
@@ -79,11 +95,11 @@ contract ChessNFT is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard {
         string memory imageURI,
         uint256 mintPrice
     ) external payable nonReentrant {
-        require(mintingEnabled, "Minting is disabled");
-        require(msg.value >= mintFee, "Insufficient mint fee");
-        require(_tokenIds < maxSupply, "Max supply reached");
-        require(bytes(name).length > 0, "Name cannot be empty");
-        require(bytes(imageURI).length > 0, "Image URI cannot be empty");
+        if (!mintingEnabled) revert MintingDisabled();
+        if (msg.value < mintFee) revert InsufficientMintFee();
+        if (_tokenIds >= maxSupply) revert MaxSupplyReached();
+        if (bytes(name).length == 0) revert InvalidName();
+        if (bytes(imageURI).length == 0) revert InvalidImageURI();
 
         _tokenIds++;
         uint256 tokenId = _tokenIds;
@@ -125,9 +141,9 @@ contract ChessNFT is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard {
         string memory imageURI,
         string[] memory pieceURIs
     ) external payable nonReentrant {
-        require(mintingEnabled, "Minting is disabled");
-        require(msg.value >= mintFee * 2, "Insufficient mint fee for set");
-        require(pieceURIs.length == 32, "Must provide 32 piece URIs"); // 16 pieces per color
+        if (!mintingEnabled) revert MintingDisabled();
+        if (msg.value < mintFee * 2) revert InsufficientMintFee();
+        if (pieceURIs.length != 16) revert InvalidPieceCount(); // 16 pieces for a complete set
 
         // Mint the set NFT
         _tokenIds++;
@@ -153,10 +169,10 @@ contract ChessNFT is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard {
         _safeMint(msg.sender, setId);
         _setTokenURI(setId, imageURI);
 
-        emit NFTMinted(setId, msg.sender, NFTType.SET, Rarity.RARE);
+        emit ChessSetMinted(setId, msg.sender, setName);
 
         // Mint individual pieces
-        for (uint256 i = 0; i < pieceURIs.length; i++) {
+        for (uint256 i = 0; i < 16; i++) {
             _tokenIds++;
             uint256 pieceId = _tokenIds;
 
@@ -189,7 +205,9 @@ contract ChessNFT is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard {
      * @param tokenId ID of the token to burn
      */
     function burnNFT(uint256 tokenId) external {
-        require(ownerOf(tokenId) == msg.sender || getApproved(tokenId) == msg.sender || isApprovedForAll(ownerOf(tokenId), msg.sender), "Not authorized to burn");
+        if (ownerOf(tokenId) != msg.sender && getApproved(tokenId) != msg.sender && !isApprovedForAll(ownerOf(tokenId), msg.sender)) {
+            revert NotAuthorizedToBurn();
+        }
         
         NFTMetadata memory metadata = tokenMetadata[tokenId];
         
@@ -255,19 +273,17 @@ contract ChessNFT is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard {
     /**
      * @dev Get tokens by type
      * @param nftType Type to filter by
-     * @param owner Owner address (optional, use address(0) for all)
      * @return Array of token IDs
      */
-    function getTokensByType(NFTType nftType, address owner) external view returns (uint256[] memory) {
-        uint256[] memory allTokens = owner == address(0) ? 
-            new uint256[](_tokenIds) : ownerTokens[owner];
+    function getTokensByType(NFTType nftType) external view returns (uint256[] memory) {
+        uint256[] memory allTokens = new uint256[](_tokenIds);
         
         uint256 count = 0;
-        uint256[] memory temp = new uint256[](allTokens.length);
+        uint256[] memory temp = new uint256[](_tokenIds);
         
-        for (uint256 i = 0; i < allTokens.length; i++) {
-            if (tokenMetadata[allTokens[i]].nftType == nftType) {
-                temp[count] = allTokens[i];
+        for (uint256 i = 1; i <= _tokenIds; i++) {
+            if (tokenMetadata[i].nftType == nftType) {
+                temp[count] = i;
                 count++;
             }
         }
@@ -283,19 +299,15 @@ contract ChessNFT is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard {
     /**
      * @dev Get tokens by rarity
      * @param rarity Rarity to filter by
-     * @param owner Owner address (optional, use address(0) for all)
      * @return Array of token IDs
      */
-    function getTokensByRarity(Rarity rarity, address owner) external view returns (uint256[] memory) {
-        uint256[] memory allTokens = owner == address(0) ? 
-            new uint256[](_tokenIds) : ownerTokens[owner];
-        
+    function getTokensByRarity(Rarity rarity) external view returns (uint256[] memory) {
         uint256 count = 0;
-        uint256[] memory temp = new uint256[](allTokens.length);
+        uint256[] memory temp = new uint256[](_tokenIds);
         
-        for (uint256 i = 0; i < allTokens.length; i++) {
-            if (tokenMetadata[allTokens[i]].rarity == rarity) {
-                temp[count] = allTokens[i];
+        for (uint256 i = 1; i <= _tokenIds; i++) {
+            if (tokenMetadata[i].rarity == rarity) {
+                temp[count] = i;
                 count++;
             }
         }
@@ -314,30 +326,33 @@ contract ChessNFT is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard {
      * @return NFT metadata
      */
     function getNFTMetadata(uint256 tokenId) external view returns (NFTMetadata memory) {
-        require(ownerOf(tokenId) != address(0), "Token does not exist");
+        if (ownerOf(tokenId) == address(0)) revert TokenDoesNotExist();
         return tokenMetadata[tokenId];
     }
 
     /**
      * @dev Get collection statistics
      * @return totalSupply Total number of NFTs
-     * @return typeCountsArray Counts by type
-     * @return rarityCountsArray Counts by rarity
+     * @return totalMinted Total minted
+     * @return totalBurned Total burned
+     * @return piecesCount Number of pieces
+     * @return boardsCount Number of boards
+     * @return avatarsCount Number of avatars
      */
     function getCollectionStats() external view returns (
         uint256 totalSupply,
-        uint256[4] memory typeCountsArray,
-        uint256[5] memory rarityCountsArray
+        uint256 totalMinted,
+        uint256 totalBurned,
+        uint256 piecesCount,
+        uint256 boardsCount,
+        uint256 avatarsCount
     ) {
         totalSupply = _tokenIds;
-        
-        for (uint256 i = 0; i < 4; i++) {
-            typeCountsArray[i] = typeCounts[NFTType(i)];
-        }
-        
-        for (uint256 i = 0; i < 5; i++) {
-            rarityCountsArray[i] = rarityCounts[Rarity(i)];
-        }
+        totalMinted = _tokenIds;
+        totalBurned = 0; // Not implemented yet
+        piecesCount = typeCounts[NFTType.PIECE];
+        boardsCount = typeCounts[NFTType.BOARD];
+        avatarsCount = typeCounts[NFTType.AVATAR];
     }
 
     /**
@@ -346,6 +361,7 @@ contract ChessNFT is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard {
      */
     function setMintingEnabled(bool enabled) external onlyOwner {
         mintingEnabled = enabled;
+        emit MintingEnabledUpdated(enabled);
     }
 
     /**
@@ -354,6 +370,7 @@ contract ChessNFT is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard {
      */
     function setMintFee(uint256 newFee) external onlyOwner {
         mintFee = newFee;
+        emit MintFeeUpdated(newFee);
     }
 
     /**
@@ -361,15 +378,18 @@ contract ChessNFT is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard {
      * @param newMaxSupply New max supply
      */
     function setMaxSupply(uint256 newMaxSupply) external onlyOwner {
-        require(newMaxSupply >= _tokenIds, "Cannot reduce below current supply");
+        if (newMaxSupply < _tokenIds) revert MaxSupplyReached();
         maxSupply = newMaxSupply;
+        emit MaxSupplyUpdated(newMaxSupply);
     }
 
     /**
      * @dev Withdraw collected fees (owner only)
      */
     function withdrawFees() external onlyOwner {
-        payable(owner()).transfer(address(this).balance);
+        uint256 amount = address(this).balance;
+        payable(owner()).transfer(amount);
+        emit FeesWithdrawn(owner(), amount);
     }
 
     // Override required functions

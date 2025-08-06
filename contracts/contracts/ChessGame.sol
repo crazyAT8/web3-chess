@@ -9,6 +9,18 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  * @dev Smart contract for managing chess games with Web3 integration
  */
 contract ChessGame is ReentrancyGuard, Ownable {
+    // Custom errors
+    error StakeAmountMismatch();
+    error StakeTooLow();
+    error StakeTooHigh();
+    error GameNotInWaitingState();
+    error PlayerAlreadyInGame();
+    error GameFull();
+    error NotYourTurn();
+    error GameNotActive();
+    error InvalidMove();
+    error GameNotActiveForEnding();
+    error InvalidPlatformFee();
 
     // Game states
     enum GameState {
@@ -85,9 +97,9 @@ contract ChessGame is ReentrancyGuard, Ownable {
      * @param stake Amount of ETH to stake for the game
      */
     function createGame(uint256 stake) external payable nonReentrant {
-        require(msg.value == stake, "Stake amount must match sent value");
-        require(stake >= minStake, "Stake too low");
-        require(stake <= maxStake, "Stake too high");
+        if (msg.value != stake) revert StakeAmountMismatch();
+        if (stake < minStake) revert StakeTooLow();
+        if (stake > maxStake) revert StakeTooHigh();
 
         _gameIds++;
         uint256 gameId = _gameIds;

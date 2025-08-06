@@ -12,6 +12,17 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
  * @dev ERC20 token for ChessFi platform rewards and governance
  */
 contract ChessToken is ERC20, ERC20Burnable, ERC20Pausable, Ownable, ReentrancyGuard {
+    // Custom errors
+    error NotAuthorizedToReward();
+    error InvalidRewardAmount();
+    error RewardPoolExhausted();
+    error CannotStakeZero();
+    error InsufficientBalance();
+    error InsufficientStakedAmount();
+    error CannotUnstakeZero();
+    error NoTokensStaked();
+    error NoRewardsToClaim();
+    error RateTooHigh();
     
     // Tokenomics
     uint256 public constant INITIAL_SUPPLY = 10000000 * 10**18; // 10 million tokens
@@ -67,9 +78,9 @@ contract ChessToken is ERC20, ERC20Burnable, ERC20Pausable, Ownable, ReentrancyG
      * @param reason Reason for reward
      */
     function _rewardTokens(address player, uint256 amount, string memory reason) internal {
-        require(authorizedRewarders[msg.sender], "Not authorized to reward");
-        require(amount > 0, "Reward amount must be positive");
-        require(totalRewardsDistributed + amount <= REWARD_POOL, "Reward pool exhausted");
+        if (!authorizedRewarders[msg.sender]) revert NotAuthorizedToReward();
+        if (amount == 0) revert InvalidRewardAmount();
+        if (totalRewardsDistributed + amount > REWARD_POOL) revert RewardPoolExhausted();
 
         _mint(player, amount);
         totalRewardsDistributed += amount;
@@ -82,7 +93,7 @@ contract ChessToken is ERC20, ERC20Burnable, ERC20Pausable, Ownable, ReentrancyG
      * @param player Winner address
      */
     function rewardWin(address player) external {
-        require(authorizedRewarders[msg.sender], "Not authorized to reward");
+        if (!authorizedRewarders[msg.sender]) revert NotAuthorizedToReward();
         _rewardTokens(player, winReward, "Game Win");
     }
 
@@ -91,7 +102,7 @@ contract ChessToken is ERC20, ERC20Burnable, ERC20Pausable, Ownable, ReentrancyG
      * @param player Player address
      */
     function rewardDraw(address player) external {
-        require(authorizedRewarders[msg.sender], "Not authorized to reward");
+        if (!authorizedRewarders[msg.sender]) revert NotAuthorizedToReward();
         _rewardTokens(player, drawReward, "Game Draw");
     }
 
@@ -100,7 +111,7 @@ contract ChessToken is ERC20, ERC20Burnable, ERC20Pausable, Ownable, ReentrancyG
      * @param player Player address
      */
     function rewardParticipation(address player) external {
-        require(authorizedRewarders[msg.sender], "Not authorized to reward");
+        if (!authorizedRewarders[msg.sender]) revert NotAuthorizedToReward();
         _rewardTokens(player, participationReward, "Game Participation");
     }
 
@@ -109,7 +120,7 @@ contract ChessToken is ERC20, ERC20Burnable, ERC20Pausable, Ownable, ReentrancyG
      * @param player Winner address
      */
     function rewardTournamentWin(address player) external {
-        require(authorizedRewarders[msg.sender], "Not authorized to reward");
+        if (!authorizedRewarders[msg.sender]) revert NotAuthorizedToReward();
         _rewardTokens(player, tournamentReward, "Tournament Win");
     }
 
@@ -118,8 +129,8 @@ contract ChessToken is ERC20, ERC20Burnable, ERC20Pausable, Ownable, ReentrancyG
      * @param amount Amount to stake
      */
     function stake(uint256 amount) external nonReentrant {
-        require(amount > 0, "Cannot stake 0 tokens");
-        require(balanceOf(msg.sender) >= amount, "Insufficient balance");
+        if (amount == 0) revert CannotStakeZero();
+        if (balanceOf(msg.sender) < amount) revert InsufficientBalance();
 
         Staker storage staker = stakers[msg.sender];
         
@@ -144,10 +155,10 @@ contract ChessToken is ERC20, ERC20Burnable, ERC20Pausable, Ownable, ReentrancyG
      * @param amount Amount to unstake
      */
     function unstake(uint256 amount) external nonReentrant {
-        require(amount > 0, "Cannot unstake 0 tokens");
+        if (amount == 0) revert CannotUnstakeZero();
         
         Staker storage staker = stakers[msg.sender];
-        require(staker.stakedAmount >= amount, "Insufficient staked amount");
+        if (staker.stakedAmount < amount) revert InsufficientStakedAmount();
 
         // Claim pending rewards first
         _claimStakingRewards(msg.sender);
@@ -167,10 +178,10 @@ contract ChessToken is ERC20, ERC20Burnable, ERC20Pausable, Ownable, ReentrancyG
      */
     function claimRewards() external nonReentrant {
         Staker storage staker = stakers[msg.sender];
-        require(staker.stakedAmount > 0, "No tokens staked");
+        if (staker.stakedAmount == 0) revert NoTokensStaked();
 
         uint256 rewards = _calculateStakingRewards(msg.sender);
-        require(rewards > 0, "No rewards to claim");
+        if (rewards == 0) revert NoRewardsToClaim();
 
         staker.pendingRewards = 0;
         staker.lastRewardTime = block.timestamp;
@@ -256,7 +267,7 @@ contract ChessToken is ERC20, ERC20Burnable, ERC20Pausable, Ownable, ReentrancyG
      * @param newRate New rate in basis points
      */
     function setStakingRewardRate(uint256 newRate) external onlyOwner {
-        require(newRate <= 1000, "Rate too high"); // Max 10%
+        if (newRate > 1000) revert RateTooHigh(); // Max 10%
         stakingRewardRate = newRate;
         emit RewardRateUpdated(newRate);
     }

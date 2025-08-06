@@ -10,6 +10,20 @@ import "./ChessGame.sol";
  * @dev Smart contract for managing chess tournaments with prize pools
  */
 contract ChessTournament is ReentrancyGuard, Ownable {
+    // Custom errors
+    error InvalidName();
+    error EntryFeeTooLow();
+    error EntryFeeTooHigh();
+    error InvalidMaxPlayers();
+    error StartTimeInPast();
+    error TournamentNotInRegistration();
+    error AlreadyRegistered();
+    error IncorrectEntryFee();
+    error TournamentNotActive();
+    error MatchAlreadyComplete();
+    error InvalidWinner();
+    error InvalidPlatformFee();
+    error InvalidEntryFeeLimits();
 
     // Tournament states
     enum TournamentState {
@@ -68,6 +82,8 @@ contract ChessTournament is ReentrancyGuard, Ownable {
     event MatchCompleted(uint256 indexed tournamentId, uint256 indexed matchId, address winner);
     event TournamentFinished(uint256 indexed tournamentId, address winner, uint256 prize);
     event PrizeDistributed(uint256 indexed tournamentId, address player, uint256 amount);
+    event PlatformFeeUpdated(uint256 newFee);
+    event EntryFeeLimitsUpdated(uint256 newMinFee, uint256 newMaxFee);
 
     // State variables
     uint256 private _tournamentIds;
@@ -100,11 +116,11 @@ contract ChessTournament is ReentrancyGuard, Ownable {
         uint256 maxPlayers,
         uint256 startTime
     ) external onlyOwner {
-        require(bytes(name).length > 0, "Name cannot be empty");
-        require(entryFee >= minEntryFee, "Entry fee too low");
-        require(entryFee <= maxEntryFee, "Entry fee too high");
-        require(maxPlayers >= 2, "Need at least 2 players");
-        require(startTime > block.timestamp, "Start time must be in the future");
+        if (bytes(name).length == 0) revert InvalidName();
+        if (entryFee < minEntryFee) revert EntryFeeTooLow();
+        if (entryFee > maxEntryFee) revert EntryFeeTooHigh();
+        if (maxPlayers < 2) revert InvalidMaxPlayers();
+        if (startTime <= block.timestamp) revert StartTimeInPast();
 
         _tournamentIds++;
         uint256 tournamentId = _tournamentIds;
@@ -138,10 +154,10 @@ contract ChessTournament is ReentrancyGuard, Ownable {
      */
     function registerForTournament(uint256 tournamentId) external payable nonReentrant {
         Tournament storage tournament = tournaments[tournamentId];
-        require(tournament.state == TournamentState.REGISTRATION, "Tournament not in registration");
-        require(!tournament.registeredPlayers[msg.sender], "Already registered");
-        require(tournament.currentPlayers < tournament.maxPlayers, "Tournament full");
-        require(msg.value == tournament.entryFee, "Incorrect entry fee");
+        if (tournament.state != TournamentState.REGISTRATION) revert TournamentNotInRegistration();
+        if (tournament.registeredPlayers[msg.sender]) revert AlreadyRegistered();
+        if (tournament.currentPlayers >= tournament.maxPlayers) revert TournamentNotInRegistration(); // Tournament full
+        if (msg.value != tournament.entryFee) revert IncorrectEntryFee();
 
         tournament.registeredPlayers[msg.sender] = true;
         tournament.players.push(msg.sender);
@@ -493,8 +509,9 @@ contract ChessTournament is ReentrancyGuard, Ownable {
      * @param newFee New fee in basis points
      */
     function setPlatformFee(uint256 newFee) external onlyOwner {
-        require(newFee <= 100, "Fee too high"); // Max 10%
+        if (newFee > 100) revert InvalidPlatformFee(); // Max 10%
         platformFee = newFee;
+        emit PlatformFeeUpdated(newFee);
     }
 
     /**
@@ -503,9 +520,10 @@ contract ChessTournament is ReentrancyGuard, Ownable {
      * @param newMaxFee New maximum entry fee
      */
     function setEntryFeeLimits(uint256 newMinFee, uint256 newMaxFee) external onlyOwner {
-        require(newMinFee < newMaxFee, "Invalid fee limits");
+        if (newMinFee >= newMaxFee) revert InvalidEntryFeeLimits();
         minEntryFee = newMinFee;
         maxEntryFee = newMaxFee;
+        emit EntryFeeLimitsUpdated(newMinFee, newMaxFee);
     }
 
     /**
