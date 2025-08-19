@@ -8,9 +8,13 @@
     "test": "hardhat test",
     "deploy": "hardhat run scripts/deploy.js",
     "deploy:local": "hardhat run scripts/deploy.js --network localhost",
-    "deploy:sepolia": "hardhat run scripts/deploy.js --network sepolia",
+    "deploy:sepolia": "hardhat run scripts/deploy-sepolia.js --network sepolia",
+    "verify:sepolia": "hardhat run scripts/verify-sepolia.js --network sepolia",
+    "test:deployed": "hardhat run scripts/test-deployed-contracts.js --network sepolia",
     "node": "hardhat node",
-    "clean": "hardhat clean"
+    "clean": "hardhat clean",
+    "console:sepolia": "hardhat console --network sepolia",
+    "console:local": "hardhat console --network localhost"
   },
   "keywords": [],
   "author": "",

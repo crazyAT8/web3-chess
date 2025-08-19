@@ -1,288 +1,193 @@
-# ChessFi Smart Contracts
+# 🏗️ ChessFi Smart Contracts
 
-This directory contains the smart contracts for the ChessFi Web3 chess platform. The contracts are built using Solidity and Hardhat.
+This directory contains the smart contracts for the ChessFi Web3 chess gaming platform.
 
 ## 📋 Contract Overview
 
-### Core Contracts
-
-1. **ChessGame.sol** - Main game logic and state management
-2. **ChessNFT.sol** - NFT minting for chess pieces, boards, and avatars
-3. **ChessTournament.sol** - Tournament management with prize pools
-4. **ChessToken.sol** - ERC20 token for rewards and governance
+- **ChessToken.sol** - ERC20 token with staking rewards and game incentives
+- **ChessGame.sol** - Core chess game logic with staking and winner determination
+- **ChessNFT.sol** - NFT contract for chess pieces, boards, and player avatars
+- **ChessTournament.sol** - Tournament system with multiple formats and prize distribution
 
 ## 🚀 Quick Start
 
-### Prerequisites
-
-- Node.js (v16 or higher)
-- npm or yarn
-- Git
-
-### Installation
-
+### 1. Install Dependencies
 ```bash
-# Install dependencies
 npm install
-
-# Compile contracts
-npx hardhat compile
-
-# Run tests
-npx hardhat test
-
-# Deploy to local network
-npx hardhat node
-npx hardhat run scripts/deploy.js --network localhost
 ```
 
-## 📜 Contract Details
+### 2. Compile Contracts
+```bash
+npm run compile
+```
 
-### ChessGame.sol
+### 3. Run Tests
+```bash
+npm test
+```
 
-**Purpose**: Manages individual chess games with staking and rewards.
+## 🌐 Deployment
 
-**Key Features**:
+### Local Development
+```bash
+# Start local Hardhat node
+npm run node
 
-- Create and join games with ETH stakes
-- Make moves and track game state
-- Automatic stake distribution on game completion
-- Player statistics tracking
-- Platform fee collection
+# Deploy to local network
+npm run deploy:local
+```
 
-**Main Functions**:
+### Sepolia Testnet
+```bash
+# Deploy to Sepolia testnet
+npm run deploy:sepolia
 
-- `createGame(uint256 stake)` - Create a new game with stake
-- `joinGame(uint256 gameId)` - Join an existing game
-- `makeMove(uint256 gameId, uint8 fromRow, uint8 fromCol, uint8 toRow, uint8 toCol, PieceType pieceType)` - Make a chess move
-- `endGame(uint256 gameId, GameState state)` - End a game manually
+# Verify contracts on Etherscan
+npm run verify:sepolia
 
-### ChessNFT.sol
+# Test deployed contracts
+npm run test:deployed
+```
 
-**Purpose**: Manages NFT minting for chess-related digital assets.
+## ⚙️ Configuration
 
-**Key Features**:
+### Environment Setup
+1. Copy `env.example` to `.env`
+2. Fill in your values:
+   - `PRIVATE_KEY` - Your wallet's private key
+   - `SEPOLIA_URL` - Sepolia RPC endpoint
+   - `ETHERSCAN_API_KEY` - For contract verification
 
-- Mint individual chess pieces, boards, and avatars
-- Complete chess set minting
-- Rarity levels and metadata management
-- Collection statistics
-- Tradeable and non-tradeable NFTs
+### Network Configuration
+The project supports multiple networks:
+- **Localhost** - For development and testing
+- **Sepolia** - Ethereum testnet (recommended for testing)
+- **Goerli** - Legacy testnet (deprecated)
+- **Mainnet** - Production deployment
 
-**Main Functions**:
+## 📚 Scripts
 
-- `mintNFT(NFTType nftType, Rarity rarity, string name, string description, string imageURI, uint256 mintPrice)` - Mint individual NFT
-- `mintChessSet(string setName, string description, string imageURI, string[] pieceURIs)` - Mint complete chess set
-- `getTokensByOwner(address owner)` - Get all tokens owned by address
-- `getCollectionStats()` - Get collection statistics
+| Script | Description |
+|--------|-------------|
+| `compile` | Compile all contracts |
+| `test` | Run test suite |
+| `deploy` | Deploy to default network |
+| `deploy:local` | Deploy to local Hardhat network |
+| `deploy:sepolia` | Deploy to Sepolia testnet |
+| `verify:sepolia` | Verify contracts on Etherscan |
+| `test:deployed` | Test deployed contracts on Sepolia |
+| `console:sepolia` | Open Hardhat console on Sepolia |
+| `console:local` | Open Hardhat console on local network |
 
-### ChessTournament.sol
+## 🔍 Contract Verification
 
-**Purpose**: Manages chess tournaments with brackets and prize pools.
+Contract verification makes your smart contract code publicly readable on Etherscan.
 
-**Key Features**:
+### Prerequisites
+- Etherscan API key
+- Deployed contracts
+- Correct constructor arguments
 
-- Single elimination, double elimination, and round robin tournaments
-- Automatic bracket generation
-- Prize pool distribution
-- Tournament state management
-- Player registration and match tracking
+### Verification Commands
+```bash
+# Verify all contracts
+npm run verify:sepolia
 
-**Main Functions**:
-
-- `createTournament(string name, string description, TournamentType tournamentType, uint256 entryFee, uint256 maxPlayers, uint256 startTime)` - Create tournament
-- `registerForTournament(uint256 tournamentId)` - Register for tournament
-- `completeMatch(uint256 tournamentId, uint256 matchId, address winner)` - Complete a match
-- `getTournament(uint256 tournamentId)` - Get tournament details
-
-### ChessToken.sol
-
-**Purpose**: ERC20 token for platform rewards and governance.
-
-**Key Features**:
-
-- Token rewards for game participation and wins
-- Staking rewards system
-- Authorized rewarder system
-- Tokenomics management
-- Emergency pause functionality
-
-**Main Functions**:
-
-- `rewardWin(address player)` - Reward tokens for winning
-- `rewardDraw(address player)` - Reward tokens for drawing
-- `stake(uint256 amount)` - Stake tokens for rewards
-- `claimRewards()` - Claim staking rewards
+# Manual verification (if needed)
+npx hardhat verify --network sepolia CONTRACT_ADDRESS [CONSTRUCTOR_ARGS]
+```
 
 ## 🧪 Testing
 
-Run the test suite:
+### Test Structure
+- **Unit Tests** - Individual contract function testing
+- **Integration Tests** - Contract interaction testing
+- **Deployment Tests** - Post-deployment verification
 
+### Running Tests
 ```bash
 # Run all tests
-npx hardhat test
+npm test
 
 # Run specific test file
 npx hardhat test test/ChessGame.test.js
 
-# Run with coverage
-npx hardhat coverage
+# Run with gas reporting
+REPORT_GAS=true npm test
 ```
 
-## 📦 Deployment
+## 📁 Project Structure
 
-### Local Development
+```
+contracts/
+├── contracts/           # Smart contract source files
+├── scripts/            # Deployment and utility scripts
+├── test/              # Test files
+├── artifacts/         # Compiled contract artifacts
+├── cache/             # Hardhat cache
+├── hardhat.config.js  # Hardhat configuration
+├── package.json       # Dependencies and scripts
+└── README.md          # This file
+```
 
+## 🔗 Useful Commands
+
+### Hardhat Console
 ```bash
-# Start local blockchain
-npx hardhat node
+# Connect to Sepolia
+npm run console:sepolia
 
-# Deploy contracts
-npx hardhat run scripts/deploy.js --network localhost
+# Connect to local network
+npm run console:local
 ```
 
-### Testnet Deployment
-
-```bash
-# Deploy to Sepolia testnet
-npx hardhat run scripts/deploy.js --network sepolia
-```
-
-### Mainnet Deployment
-
-```bash
-# Deploy to Ethereum mainnet
-npx hardhat run scripts/deploy.js --network mainnet
-```
-
-## 🔧 Configuration
-
-### Environment Variables
-
-Create a `.env` file in the contracts directory:
-
-```env
-PRIVATE_KEY=your_private_key_here
-SEPOLIA_URL=https://sepolia.infura.io/v3/your_project_id
-MAINNET_URL=https://mainnet.infura.io/v3/your_project_id
-ETHERSCAN_API_KEY=your_etherscan_api_key
-```
-
-### Network Configuration
-
-The `hardhat.config.js` file includes configurations for:
-
-- Local development network
-- Sepolia testnet
-- Ethereum mainnet
-
-## 📊 Contract Addresses
-
-After deployment, contract addresses will be saved to `deployment.json`:
-
-```json
-{
-  "network": "localhost",
-  "deployer": "0x...",
-  "contracts": {
-    "ChessToken": "0x...",
-    "ChessGame": "0x...",
-    "ChessNFT": "0x...",
-    "ChessTournament": "0x..."
-  },
-  "timestamp": "2024-01-01T00:00:00.000Z"
-}
-```
-
-## 🔗 Integration
-
-### Frontend Integration
-
-Update your frontend configuration with the deployed contract addresses:
-
-```typescript
-// contracts.ts
-export const CONTRACTS = {
-  CHESS_TOKEN: "0x...",
-  CHESS_GAME: "0x...",
-  CHESS_NFT: "0x...",
-  CHESS_TOURNAMENT: "0x..."
-};
-```
-
-### Backend Integration
-
-Update your backend with contract ABIs and addresses:
-
+### Contract Interaction
 ```javascript
-// contractConfig.js
-const contractAddresses = {
-  chessToken: "0x...",
-  chessGame: "0x...",
-  chessNFT: "0x...",
-  chessTournament: "0x..."
-};
+// Get contract factory
+const ChessToken = await ethers.getContractFactory("ChessToken");
+
+// Deploy new contract
+const token = await ChessToken.deploy();
+
+// Attach to existing contract
+const token = ChessToken.attach("CONTRACT_ADDRESS");
+
+// Call contract functions
+const name = await token.name();
+const balance = await token.balanceOf("ADDRESS");
 ```
 
-## 🛡️ Security
-
-### Best Practices
-
-- All contracts use OpenZeppelin libraries for security
-- Reentrancy protection on all external functions
-- Access control with Ownable pattern
-- Input validation and bounds checking
-- Emergency pause functionality
-
-### Audit Considerations
-
-- External audit recommended before mainnet deployment
-- Test coverage should exceed 90%
-- Manual testing of all edge cases
-- Gas optimization for user interactions
-
-## 📈 Gas Optimization
-
-### Tips for Gas Efficiency
-
-- Use `uint256` for loop counters
-- Pack structs efficiently
-- Minimize storage reads/writes
-- Use events instead of storage for historical data
-- Batch operations when possible
-
-## 🐛 Troubleshooting
+## 🚨 Troubleshooting
 
 ### Common Issues
 
-1. **Compilation Errors**
+#### Compilation Errors
+- Check Solidity version compatibility
+- Verify OpenZeppelin contract versions
+- Ensure all imports are correct
 
-   ```bash
-   # Clear cache and recompile
-   npx hardhat clean
-   npx hardhat compile
-   ```
+#### Deployment Failures
+- Verify sufficient ETH balance
+- Check RPC endpoint connectivity
+- Confirm private key format
 
-2. **Test Failures**
+#### Verification Issues
+- Wait for deployment to be mined
+- Verify correct constructor arguments
+- Check Etherscan API key validity
 
-   ```bash
-   # Run tests with verbose output
-   npx hardhat test --verbose
-   ```
+### Getting Help
+1. Check the troubleshooting section in `DEPLOYMENT_GUIDE.md`
+2. Review error messages and logs
+3. Verify network configuration
+4. Check contract compilation status
 
-3. **Deployment Issues**
+## 📖 Documentation
 
-   ```bash
-   # Check network configuration
-   npx hardhat console --network localhost
-   ```
-
-## 📚 Additional Resources
-
-- [Solidity Documentation](https://docs.soliditylang.org/)
-- [Hardhat Documentation](https://hardhat.org/docs)
-- [OpenZeppelin Contracts](https://docs.openzeppelin.com/contracts/)
-- [Ethereum Development](https://ethereum.org/developers/)
+- **DEPLOYMENT_GUIDE.md** - Comprehensive deployment instructions
+- **DEPLOYMENT_CHECKLIST.md** - Step-by-step deployment checklist
+- **Hardhat Documentation** - https://hardhat.org/docs
+- **OpenZeppelin Contracts** - https://docs.openzeppelin.com/contracts/
 
 ## 🤝 Contributing
 
@@ -295,4 +200,8 @@ const contractAddresses = {
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the LICENSE file for details. 
+This project is licensed under the MIT License.
+
+---
+
+**Happy Coding! 🎉** 
