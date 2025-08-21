@@ -12,16 +12,19 @@ This directory contains the smart contracts for the ChessFi Web3 chess gaming pl
 ## 🚀 Quick Start
 
 ### 1. Install Dependencies
+
 ```bash
 npm install
 ```
 
 ### 2. Compile Contracts
+
 ```bash
 npm run compile
 ```
 
 ### 3. Run Tests
+
 ```bash
 npm test
 ```
@@ -29,6 +32,7 @@ npm test
 ## 🌐 Deployment
 
 ### Local Development
+
 ```bash
 # Start local Hardhat node
 npm run node
@@ -38,6 +42,7 @@ npm run deploy:local
 ```
 
 ### Sepolia Testnet
+
 ```bash
 # Deploy to Sepolia testnet
 npm run deploy:sepolia
@@ -52,6 +57,7 @@ npm run test:deployed
 ## ⚙️ Configuration
 
 ### Environment Setup
+
 1. Copy `env.example` to `.env`
 2. Fill in your values:
    - `PRIVATE_KEY` - Your wallet's private key
@@ -59,7 +65,9 @@ npm run test:deployed
    - `ETHERSCAN_API_KEY` - For contract verification
 
 ### Network Configuration
+
 The project supports multiple networks:
+
 - **Localhost** - For development and testing
 - **Sepolia** - Ethereum testnet (recommended for testing)
 - **Goerli** - Legacy testnet (deprecated)
@@ -84,11 +92,13 @@ The project supports multiple networks:
 Contract verification makes your smart contract code publicly readable on Etherscan.
 
 ### Prerequisites
+
 - Etherscan API key
 - Deployed contracts
 - Correct constructor arguments
 
 ### Verification Commands
+
 ```bash
 # Verify all contracts
 npm run verify:sepolia
@@ -100,11 +110,13 @@ npx hardhat verify --network sepolia CONTRACT_ADDRESS [CONSTRUCTOR_ARGS]
 ## 🧪 Testing
 
 ### Test Structure
+
 - **Unit Tests** - Individual contract function testing
 - **Integration Tests** - Contract interaction testing
 - **Deployment Tests** - Post-deployment verification
 
 ### Running Tests
+
 ```bash
 # Run all tests
 npm test
@@ -133,6 +145,7 @@ contracts/
 ## 🔗 Useful Commands
 
 ### Hardhat Console
+
 ```bash
 # Connect to Sepolia
 npm run console:sepolia
@@ -142,6 +155,7 @@ npm run console:local
 ```
 
 ### Contract Interaction
+
 ```javascript
 // Get contract factory
 const ChessToken = await ethers.getContractFactory("ChessToken");
@@ -162,21 +176,25 @@ const balance = await token.balanceOf("ADDRESS");
 ### Common Issues
 
 #### Compilation Errors
+
 - Check Solidity version compatibility
 - Verify OpenZeppelin contract versions
 - Ensure all imports are correct
 
 #### Deployment Failures
+
 - Verify sufficient ETH balance
 - Check RPC endpoint connectivity
 - Confirm private key format
 
 #### Verification Issues
+
 - Wait for deployment to be mined
 - Verify correct constructor arguments
 - Check Etherscan API key validity
 
 ### Getting Help
+
 1. Check the troubleshooting section in `DEPLOYMENT_GUIDE.md`
 2. Review error messages and logs
 3. Verify network configuration
