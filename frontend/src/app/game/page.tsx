@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Crown, Clock, Coins } from "lucide-react"
 import Link from "next/link"
+import { GameCreationForm } from "@/components/contracts/GameCreationForm"
 
 type PieceType = "king" | "queen" | "rook" | "bishop" | "knight" | "pawn"
 type PieceColor = "white" | "black"
@@ -249,6 +250,16 @@ export default function Game() {
                     50 CHESS
                   </span>
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Game Creation Form */}
+            <Card className="bg-black/40 border-purple-800/30 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="text-white text-lg">Create or Join Game</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <GameCreationForm />
               </CardContent>
             </Card>
 

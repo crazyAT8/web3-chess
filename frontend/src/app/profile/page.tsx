@@ -12,9 +12,12 @@ import Link from "next/link"
 import { CustomConnectButton } from "@/components/wallet/ConnectButton"
 import { WalletStatus } from "@/components/wallet/WalletStatus"
 import { useWallet } from "@/hooks/useWallet"
+import { ContractInfo } from "@/components/contracts/ContractInfo"
+import { TokenStakingForm } from "@/components/contracts/TokenStakingForm"
+import { IntegrationTester } from "@/components/contracts/IntegrationTester"
 
 export default function Profile() {
-  const { isConnected, address, balance, chain } = useWallet()
+  const { isConnected, address, balance } = useWallet()
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
@@ -107,23 +110,32 @@ export default function Profile() {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Contract Information */}
+              <ContractInfo />
             </div>
 
             {/* Main Content */}
             <div className="lg:col-span-3">
               <Tabs defaultValue="overview" className="space-y-6">
-                <TabsList className="grid w-full grid-cols-4 bg-black/40 border border-purple-800/30">
+                <TabsList className="grid w-full grid-cols-6 bg-black/40 border border-purple-800/30">
                   <TabsTrigger value="overview" className="data-[state=active]:bg-purple-600">
                     Overview
                   </TabsTrigger>
                   <TabsTrigger value="nfts" className="data-[state=active]:bg-purple-600">
                     NFTs
                   </TabsTrigger>
+                  <TabsTrigger value="staking" className="data-[state=active]:bg-purple-600">
+                    Staking
+                  </TabsTrigger>
                   <TabsTrigger value="history" className="data-[state=active]:bg-purple-600">
                     History
                   </TabsTrigger>
                   <TabsTrigger value="achievements" className="data-[state=active]:bg-purple-600">
                     Achievements
+                  </TabsTrigger>
+                  <TabsTrigger value="testing" className="data-[state=active]:bg-purple-600">
+                    Testing
                   </TabsTrigger>
                 </TabsList>
 
@@ -243,6 +255,10 @@ export default function Profile() {
                   </Card>
                 </TabsContent>
 
+                <TabsContent value="staking" className="space-y-6">
+                  <TokenStakingForm />
+                </TabsContent>
+
                 <TabsContent value="history" className="space-y-6">
                   <Card className="bg-black/40 border-purple-800/30 backdrop-blur-sm">
                     <CardHeader>
@@ -316,6 +332,10 @@ export default function Profile() {
                       </div>
                     </CardContent>
                   </Card>
+                </TabsContent>
+
+                <TabsContent value="testing" className="space-y-6">
+                  <IntegrationTester />
                 </TabsContent>
               </Tabs>
             </div>

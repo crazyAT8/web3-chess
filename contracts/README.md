@@ -130,7 +130,7 @@ REPORT_GAS=true npm test
 
 ## 📁 Project Structure
 
-```
+```text
 contracts/
 ├── contracts/           # Smart contract source files
 ├── scripts/            # Deployment and utility scripts
@@ -204,8 +204,8 @@ const balance = await token.balanceOf("ADDRESS");
 
 - **DEPLOYMENT_GUIDE.md** - Comprehensive deployment instructions
 - **DEPLOYMENT_CHECKLIST.md** - Step-by-step deployment checklist
-- **Hardhat Documentation** - https://hardhat.org/docs
-- **OpenZeppelin Contracts** - https://docs.openzeppelin.com/contracts/
+- **Hardhat Documentation** - <https://hardhat.org/docs>
+- **OpenZeppelin Contracts** - <https://docs.openzeppelin.com/contracts/>
 
 ## 🤝 Contributing
 
@@ -221,5 +221,3 @@ const balance = await token.balanceOf("ADDRESS");
 This project is licensed under the MIT License.
 
 ---
-
-**Happy Coding! 🎉** 

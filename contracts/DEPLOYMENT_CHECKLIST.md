@@ -3,6 +3,7 @@
 ## 🚀 Pre-Deployment Checklist
 
 ### Environment Setup
+
 - [ ] Copied `env.example` to `.env`
 - [ ] Added your private key to `.env`
 - [ ] Added Sepolia RPC URL to `.env`
@@ -10,6 +11,7 @@
 - [ ] Verified `.env` is in `.gitignore`
 
 ### Prerequisites
+
 - [ ] Node.js and npm installed
 - [ ] At least 0.1 Sepolia ETH in wallet
 - [ ] Private key accessible
@@ -17,6 +19,7 @@
 - [ ] Internet connection stable
 
 ### Project Setup
+
 - [ ] Dependencies installed (`npm install`)
 - [ ] Contracts compiled (`npm run compile`)
 - [ ] Tests passing (`npm test`)
@@ -25,6 +28,7 @@
 ## 🎯 Deployment Steps
 
 ### 1. Deploy Contracts
+
 - [ ] Run `npm run deploy:sepolia`
 - [ ] Monitor deployment progress
 - [ ] Save contract addresses
@@ -148,4 +152,4 @@ Deployment is successful when:
 
 **Deployed By**: _______________
 
-**Notes**: _______________ 
+**Notes**: _______________

@@ -108,7 +108,7 @@ Expected output if successful:
 ### Common Error: Connection Refused
 
 **Error**: `ECONNREFUSED`
-**Solution**: 
+**Solution**:
 
 - Make sure PostgreSQL service is running
 - Check if PostgreSQL is installed
@@ -200,4 +200,3 @@ Get-Service -Name "*postgres*"
 # Connect to PostgreSQL directly
 psql -U postgres -h localhost -d chessfi
 ```
- 

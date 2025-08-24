@@ -9,6 +9,7 @@ import { Progress } from "@/components/ui/progress"
 import { Crown, Sparkles, Coins, Zap, Star, Gem, Palette, Shuffle } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
+import { NFTMintForm } from "@/components/contracts/NFTMintForm"
 
 const nftCollections = [
   {
@@ -131,6 +132,11 @@ export default function Mint() {
               <div className="text-gray-300 text-sm">Minted Today</div>
             </CardContent>
           </Card>
+        </div>
+
+        {/* NFT Minting Form */}
+        <div className="mb-8">
+          <NFTMintForm />
         </div>
 
         <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
