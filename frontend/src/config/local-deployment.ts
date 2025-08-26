@@ -4,10 +4,10 @@
 export const LOCAL_DEPLOYMENT = {
   // Update these addresses after running: npx hardhat run deploy-local.js --network localhost
   CONTRACT_ADDRESSES: {
-    CHESS_TOKEN: 'NEXT_PUBLIC_CHESS_TOKEN_ADDRESS=0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9', // Replace with deployed address
-    CHESS_NFT: '0x0000000000000000000000000000000000000000',   // Replace with deployed address
-    CHESS_GAME: '0x0000000000000000000000000000000000000000',  // Replace with deployed address
-    CHESS_TOURNAMENT: '0x0000000000000000000000000000000000000000', // Replace with deployed address
+    CHESS_TOKEN: '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9', // Replace with deployed address
+    CHESS_NFT: '0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9',   // Replace with deployed address
+    CHESS_GAME: '0x5FC8d32690cc91D4c39d9d3abcBD16989F875707',  // Replace with deployed address
+    CHESS_TOURNAMENT: '0x0165878A594ca255338adfa4d48449f69242Eb8F', // Replace with deployed address
   },
   
   // Network configuration for local Hardhat

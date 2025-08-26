@@ -1,11 +1,11 @@
-import { getContract } from 'viem';
+import { getContract, type PublicClient, type WalletClient } from 'viem';
 import { usePublicClient, useWalletClient } from 'wagmi';
 
 // Import contract ABIs
-import ChessTokenABI from '../../contracts/artifacts/contracts/ChessToken.sol/ChessToken.json';
-import ChessNFTABI from '../../contracts/artifacts/contracts/ChessNFT.sol/ChessNFT.json';
-import ChessGameABI from '../../contracts/artifacts/contracts/ChessGame.sol/ChessGame.json';
-import ChessTournamentABI from '../../contracts/artifacts/contracts/ChessTournament.sol/ChessTournament.json';
+import ChessTokenABI from '../../../contracts/artifacts/contracts/ChessToken.sol/ChessToken.json';
+import ChessNFTABI from '../../../contracts/artifacts/contracts/ChessNFT.sol/ChessNFT.json';
+import ChessGameABI from '../../../contracts/artifacts/contracts/ChessGame.sol/ChessGame.json';
+import ChessTournamentABI from '../../../contracts/artifacts/contracts/ChessTournament.sol/ChessTournament.json';
 
 // Contract addresses (will be set after deployment)
 export const CONTRACT_ADDRESSES = {
@@ -30,8 +30,8 @@ export type ContractABI = keyof typeof CONTRACT_ABIS;
 // Helper function to get contract instance
 export function getContractInstance(
   contractName: ContractName,
-  publicClient: any,
-  walletClient?: any
+  publicClient: PublicClient,
+  walletClient?: WalletClient
 ) {
   const address = CONTRACT_ADDRESSES[contractName];
   const abi = CONTRACT_ABIS[contractName];
@@ -43,8 +43,7 @@ export function getContractInstance(
   return getContract({
     address: address as `0x${string}`,
     abi,
-    publicClient,
-    walletClient,
+    client: publicClient,
   });
 }
 

@@ -85,12 +85,14 @@ Your Hardhat node provides 20 accounts with 10,000 ETH each. To use them in Meta
 - Tournament information
 
 ### **✅ Contract Writes**
+
 - Mint NFTs (with test ETH)
 - Create games (with test ETH)
 - Stake tokens
 - Join tournaments
 
 ### **✅ Full Integration**
+
 - Form submissions
 - Transaction states
 - Error handling
@@ -99,20 +101,24 @@ Your Hardhat node provides 20 accounts with 10,000 ETH each. To use them in Meta
 ## 🚨 **Troubleshooting**
 
 ### **"Contracts not properly configured"**
+
 - Check if you updated `local-deployment.ts` with correct addresses
 - Verify addresses are 42 characters long and start with `0x`
 
 ### **"Wallet not connected"**
+
 - Make sure MetaMask is connected
 - Switch to "Hardhat Local" network (Chain ID: 31337)
 - Check if you're on the right network
 
 ### **"Transaction failed"**
+
 - Ensure you have test ETH in your account
 - Check browser console for specific error messages
 - Verify contract addresses are correct
 
 ### **"Network not found"**
+
 - Add Hardhat Local network to MetaMask:
   - Network Name: `Hardhat Local`
   - RPC URL: `http://127.0.0.1:8545`
@@ -122,6 +128,7 @@ Your Hardhat node provides 20 accounts with 10,000 ETH each. To use them in Meta
 ## 🎯 **Expected Results**
 
 With local contracts deployed:
+
 - ✅ All integration tests should pass
 - ✅ Contract reads return real data
 - ✅ Write operations work with test ETH
@@ -139,6 +146,7 @@ With local contracts deployed:
 ## 🎉 **Success!**
 
 You'll know everything is working when:
+
 - All integration tests pass ✅
 - You can mint NFTs with test ETH ✅
 - You can create games and tournaments ✅
