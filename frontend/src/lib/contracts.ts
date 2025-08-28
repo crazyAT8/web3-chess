@@ -1,12 +1,6 @@
 import { getContract, type PublicClient, type WalletClient } from 'viem';
 import { usePublicClient, useWalletClient } from 'wagmi';
 
-// Import contract ABIs
-import ChessTokenABI from '../../../contracts/artifacts/contracts/ChessToken.sol/ChessToken.json';
-import ChessNFTABI from '../../../contracts/artifacts/contracts/ChessNFT.sol/ChessNFT.json';
-import ChessGameABI from '../../../contracts/artifacts/contracts/ChessGame.sol/ChessGame.json';
-import ChessTournamentABI from '../../../contracts/artifacts/contracts/ChessTournament.sol/ChessTournament.json';
-
 // Contract addresses (will be set after deployment)
 export const CONTRACT_ADDRESSES = {
   CHESS_TOKEN: process.env.NEXT_PUBLIC_CHESS_TOKEN_ADDRESS || '0x0000000000000000000000000000000000000000',
@@ -15,12 +9,12 @@ export const CONTRACT_ADDRESSES = {
   CHESS_TOURNAMENT: process.env.NEXT_PUBLIC_CHESS_TOURNAMENT_ADDRESS || '0x0000000000000000000000000000000000000000',
 } as const;
 
-// Contract ABIs
+// Contract ABIs - We'll add these back once we have a clean build
 export const CONTRACT_ABIS = {
-  CHESS_TOKEN: ChessTokenABI.abi,
-  CHESS_NFT: ChessNFTABI.abi,
-  CHESS_GAME: ChessGameABI.abi,
-  CHESS_TOURNAMENT: ChessTournamentABI.abi,
+  CHESS_TOKEN: [] as any,
+  CHESS_NFT: [] as any,
+  CHESS_GAME: [] as any,
+  CHESS_TOURNAMENT: [] as any,
 } as const;
 
 // Contract types
