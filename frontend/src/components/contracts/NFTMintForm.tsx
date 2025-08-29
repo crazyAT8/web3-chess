@@ -40,9 +40,9 @@ export function NFTMintForm() {
   const [mintPrice, setMintPrice] = useState('0');
   
   // Chess Set state
-  const [setName, setSetName] = useState('');
-  const [setDescription, setSetDescription] = useState('');
-  const [setImageURI, setSetImageURI] = useState('');
+  const [chessSetName, setChessSetName] = useState('');
+  const [chessSetDescription, setChessSetDescription] = useState('');
+  const [chessSetImageURI, setChessSetImageURI] = useState('');
   const [pieceURIs, setPieceURIs] = useState(Array(16).fill(''));
   
   // Hooks
@@ -88,7 +88,7 @@ export function NFTMintForm() {
   
   // Handle chess set mint
   const handleSetMint = async () => {
-    if (!setName || !setImageURI || pieceURIs.some(uri => !uri)) {
+    if (!chessSetName || !chessSetImageURI || pieceURIs.some(uri => !uri)) {
       transactionState.setErrorMsg('All fields are required for chess set');
       return;
     }
@@ -98,15 +98,15 @@ export function NFTMintForm() {
       transactionState.setErrorMsg(null);
       
       await setMint.writeAsync({
-        args: [setName, setDescription, setImageURI, pieceURIs],
+        args: [chessSetName, chessSetDescription, chessSetImageURI, pieceURIs],
         value: contractUtils.parseETH('0.02') // 2x mint fee for set
       });
       
       transactionState.setSuccessState(true);
       // Reset form
-      setSetName('');
-      setSetDescription('');
-      setSetImageURI('');
+      setChessSetName('');
+      setChessSetDescription('');
+      setChessSetImageURI('');
       setPieceURIs(Array(16).fill(''));
     } catch (error) {
       transactionState.setErrorMsg(contractUtils.getErrorMessage(error));
@@ -277,8 +277,8 @@ export function NFTMintForm() {
                   <div>
                     <label className="text-sm font-medium text-gray-300">Set Name</label>
                     <Input
-                      value={setName}
-                      onChange={(e) => setSetName(e.target.value)}
+                      value={chessSetName}
+                      onChange={(e) => setChessSetName(e.target.value)}
                       placeholder="e.g., Royal Chess Set"
                       className="bg-black/20 border-purple-800/30"
                     />
@@ -287,8 +287,8 @@ export function NFTMintForm() {
                   <div>
                     <label className="text-sm font-medium text-gray-300">Set Description</label>
                     <Input
-                      value={setDescription}
-                      onChange={(e) => setSetDescription(e.target.value)}
+                      value={chessSetDescription}
+                      onChange={(e) => setChessSetDescription(e.target.value)}
                       placeholder="Describe your chess set..."
                       className="bg-black/20 border-purple-800/30"
                     />
@@ -297,8 +297,8 @@ export function NFTMintForm() {
                   <div>
                     <label className="text-sm font-medium text-gray-300">Set Image URI</label>
                     <Input
-                      value={setImageURI}
-                      onChange={(e) => setSetImageURI(e.target.value)}
+                      value={chessSetImageURI}
+                      onChange={(e) => setChessSetImageURI(e.target.value)}
                       placeholder="ipfs://Qm... or https://..."
                       className="bg-black/20 border-purple-800/30"
                     />
@@ -317,8 +317,8 @@ export function NFTMintForm() {
                   
                   <Button
                     onClick={handleSetMint}
-                    disabled={isLoading || !setName || !setImageURI || pieceURIs.some(uri => !uri)}
-                    className="w-full bg-purple-600 hover:bg-purple-700"
+                    disabled={isLoading || !chessSetName || !chessSetImageURI || pieceURIs.some(uri => !uri)}
+                    className="w-full bg-purple-700 hover:bg-purple-800"
                   >
                     {isLoading ? (
                       <>

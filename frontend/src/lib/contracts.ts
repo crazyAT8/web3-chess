@@ -9,13 +9,25 @@ export const CONTRACT_ADDRESSES = {
   CHESS_TOURNAMENT: process.env.NEXT_PUBLIC_CHESS_TOURNAMENT_ADDRESS || '0x0000000000000000000000000000000000000000',
 } as const;
 
-// Contract ABIs - We'll add these back once we have a clean build
+// Contract ABIs - Will be loaded from artifacts after deployment
+// For now, using empty arrays as placeholders
 export const CONTRACT_ABIS = {
   CHESS_TOKEN: [] as any,
   CHESS_NFT: [] as any,
   CHESS_GAME: [] as any,
   CHESS_TOURNAMENT: [] as any,
 } as const;
+
+// Function to load ABIs from artifacts (to be called after deployment)
+export async function loadContractABIs() {
+  try {
+    // This will be implemented after contracts are deployed
+    // For now, we'll use the placeholder empty arrays
+    console.log('Contract ABIs will be loaded after deployment');
+  } catch (error) {
+    console.error('Failed to load contract ABIs:', error);
+  }
+}
 
 // Contract types
 export type ContractName = keyof typeof CONTRACT_ADDRESSES;
@@ -32,6 +44,10 @@ export function getContractInstance(
   
   if (!address || address === '0x0000000000000000000000000000000000000000') {
     throw new Error(`Contract ${contractName} address not configured`);
+  }
+
+  if (!abi || abi.length === 0) {
+    throw new Error(`Contract ${contractName} ABI not loaded`);
   }
 
   return getContract({
