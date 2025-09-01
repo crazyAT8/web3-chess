@@ -1,6 +1,7 @@
 # 🚀 ChessFi Deployment Setup Guide
 
 ## Overview
+
 This guide will walk you through deploying the ChessFi smart contracts to Sepolia testnet and configuring the frontend to interact with them.
 
 ## ✅ What We've Completed
@@ -14,6 +15,7 @@ This guide will walk you through deploying the ChessFi smart contracts to Sepoli
 ### Step 1: Set Up Environment Variables
 
 #### For Smart Contract Deployment:
+
 1. Copy `contracts/env.template` to `contracts/.env`
 2. Fill in your values:
 
@@ -25,11 +27,13 @@ cp contracts/env.template contracts/.env
 ```
 
 **Required Values:**
+
 - `PRIVATE_KEY`: Your wallet's private key (without 0x prefix)
 - `SEPOLIA_URL`: Sepolia RPC endpoint (Infura or Alchemy)
 - `ETHERSCAN_API_KEY`: For contract verification (optional)
 
 **Example:**
+
 ```bash
 PRIVATE_KEY=1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef
 SEPOLIA_URL=https://sepolia.infura.io/v3/your_project_id
@@ -37,22 +41,26 @@ ETHERSCAN_API_KEY=your_etherscan_api_key
 ```
 
 #### For Frontend:
+
 1. Copy `frontend/env.template` to `frontend/.env.local`
 2. **Leave contract addresses as 0x0000... for now** - we'll update them after deployment
 
 ### Step 2: Deploy Smart Contracts
 
 1. **Navigate to contracts folder:**
+
 ```bash
 cd contracts
 ```
 
 2. **Install dependencies (if not already done):**
+
 ```bash
 npm install
 ```
 
 3. **Deploy to Sepolia:**
+
 ```bash
 npm run deploy:sepolia
 ```
@@ -77,23 +85,27 @@ Edit `frontend/src/lib/contracts.ts` and replace the placeholder ABIs with real 
 ### Step 4: Test the Integration
 
 1. **Start the frontend:**
+
 ```bash
 cd frontend
 npm run dev
 ```
 
 2. **Test wallet connection** and basic functionality
+
 3. **Verify contract interactions** work correctly
 
 ## 🎯 Prerequisites
 
 ### Before You Start:
+
 - [ ] **Sepolia ETH**: You need at least 0.1 ETH for deployment
 - [ ] **Private Key**: Your wallet's private key (keep it secure!)
 - [ **RPC Endpoint**: Sepolia RPC URL from Infura, Alchemy, or similar
 - [ ] **Etherscan API Key**: For contract verification (optional but recommended)
 
 ### How to Get Sepolia ETH:
+
 1. **Sepolia Faucet**: https://sepoliafaucet.com/
 2. **Alchemy Faucet**: https://sepoliafaucet.com/
 3. **Infura Faucet**: Check their documentation

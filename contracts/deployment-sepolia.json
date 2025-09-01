@@ -1,0 +1,13 @@
+{
+  "network": "sepolia",
+  "chainId": 11155111,
+  "deployer": "0x31ed33b79D8f50871A9D6494bdF9cc766161862A",
+  "contracts": {
+    "ChessToken": "0x0E887B3aAd61c724De20308cc7a3d6d8197A992a",
+    "ChessGame": "0x3DF6f0284Bf92fd48c5517b9cA9788aB479f0796",
+    "ChessNFT": "0x91a32Ce740BE656f8F150806d9d4a22518136415",
+    "ChessTournament": "0x3a34F400393cB1193616dF72Eb843Fe826ABC137"
+  },
+  "timestamp": "2025-08-30T20:22:50.151Z",
+  "etherscanBase": "https://sepolia.etherscan.io"
+}

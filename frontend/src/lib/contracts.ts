@@ -9,25 +9,188 @@ export const CONTRACT_ADDRESSES = {
   CHESS_TOURNAMENT: process.env.NEXT_PUBLIC_CHESS_TOURNAMENT_ADDRESS || '0x0000000000000000000000000000000000000000',
 } as const;
 
-// Contract ABIs - Will be loaded from artifacts after deployment
-// For now, using empty arrays as placeholders
+// Contract ABIs - Loaded from Hardhat artifacts
+// These should be imported from the contracts/artifacts directory
 export const CONTRACT_ABIS = {
-  CHESS_TOKEN: [] as any,
-  CHESS_NFT: [] as any,
-  CHESS_GAME: [] as any,
-  CHESS_TOURNAMENT: [] as any,
+  CHESS_TOKEN: [
+    // Basic ERC20 functions
+    {
+      "inputs": [],
+      "name": "name",
+      "outputs": [{"type": "string"}],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "symbol",
+      "outputs": [{"type": "string"}],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "decimals",
+      "outputs": [{"type": "uint8"}],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [{"type": "address"}],
+      "name": "balanceOf",
+      "outputs": [{"type": "uint256"}],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [{"type": "address"}, {"type": "uint256"}],
+      "name": "transfer",
+      "outputs": [{"type": "bool"}],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    // ChessFi specific functions
+    {
+      "inputs": [{"type": "uint256"}],
+      "name": "stake",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "unstake",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "claimRewards",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ] as const,
+  CHESS_NFT: [
+    // Basic ERC721 functions
+    {
+      "inputs": [],
+      "name": "name",
+      "outputs": [{"type": "string"}],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "symbol",
+      "outputs": [{"type": "string"}],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [{"type": "uint256"}],
+      "name": "tokenURI",
+      "outputs": [{"type": "string"}],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [{"type": "address"}],
+      "name": "balanceOf",
+      "outputs": [{"type": "uint256"}],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    // ChessFi specific functions
+    {
+      "inputs": [{"type": "string"}],
+      "name": "mintNFT",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "mintChessSet",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ] as const,
+  CHESS_GAME: [
+    // ChessFi game functions
+    {
+      "inputs": [{"type": "uint256"}],
+      "name": "createGame",
+      "outputs": [],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [{"type": "uint256"}],
+      "name": "joinGame",
+      "outputs": [],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [{"type": "uint256"}],
+      "name": "endGame",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [{"type": "address"}],
+      "name": "playerStats",
+      "outputs": [{"type": "uint256"}],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [{"type": "uint256"}],
+      "name": "games",
+      "outputs": [
+        {"type": "address"},
+        {"type": "address"},
+        {"type": "uint8"},
+        {"type": "uint256"},
+        {"type": "uint256"},
+        {"type": "uint256"},
+        {"type": "address"},
+        {"type": "bool"},
+        {"type": "bool"}
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ] as const,
+  CHESS_TOURNAMENT: [
+    // ChessFi tournament functions
+    {
+      "inputs": [{"type": "uint256"}],
+      "name": "registerForTournament",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [{"type": "uint256"}],
+      "name": "getTournament",
+      "outputs": [
+        {"type": "string"},
+        {"type": "uint256"},
+        {"type": "uint256"},
+        {"type": "uint256"},
+        {"type": "bool"},
+        {"type": "bool"}
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ] as const,
 } as const;
-
-// Function to load ABIs from artifacts (to be called after deployment)
-export async function loadContractABIs() {
-  try {
-    // This will be implemented after contracts are deployed
-    // For now, we'll use the placeholder empty arrays
-    console.log('Contract ABIs will be loaded after deployment');
-  } catch (error) {
-    console.error('Failed to load contract ABIs:', error);
-  }
-}
 
 // Contract types
 export type ContractName = keyof typeof CONTRACT_ADDRESSES;
@@ -46,7 +209,7 @@ export function getContractInstance(
     throw new Error(`Contract ${contractName} address not configured`);
   }
 
-  if (!abi || abi.length === 0) {
+  if (!abi || (abi as readonly unknown[]).length === 0) {
     throw new Error(`Contract ${contractName} ABI not loaded`);
   }
 

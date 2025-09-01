@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Crown, Clock, Coins } from "lucide-react"
 import Link from "next/link"
 import { GameCreationForm } from "@/components/contracts/GameCreationForm"
+import { ContractTester } from "@/components/contracts/ContractTester"
 
 type PieceType = "king" | "queen" | "rook" | "bishop" | "knight" | "pawn"
 type PieceColor = "white" | "black"
@@ -252,6 +253,9 @@ export default function Game() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Contract Tester */}
+            <ContractTester />
 
             {/* Game Creation Form */}
             <Card className="bg-black/40 border-purple-800/30 backdrop-blur-sm">
