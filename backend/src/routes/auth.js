@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit');
 const { ethers } = require('ethers');
 const { User } = require('../models');
-const { verifyWalletSignature, authRateLimit } = require('../middleware/auth');
+const { verifyWalletSignature, authRateLimit, authenticateToken } = require('../middleware/auth');
 const { asyncHandler, AppError } = require('../middleware/errorHandler');
 const Joi = require('joi');
 
@@ -247,7 +247,7 @@ router.post('/logout', asyncHandler(async (req, res) => {
 }));
 
 // Update user profile
-router.put('/profile', authLimiter, asyncHandler(async (req, res) => {
+router.put('/profile', authLimiter, authenticateToken, asyncHandler(async (req, res) => {
   const { username, email, avatar_url, preferences } = req.body;
   const user = req.user;
 

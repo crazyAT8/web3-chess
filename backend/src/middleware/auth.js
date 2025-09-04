@@ -1,6 +1,7 @@
 const { ethers } = require('ethers');
 const rateLimit = require('express-rate-limit');
 const jwt = require('jsonwebtoken');
+const { User } = require('../models');
 
 // Rate limiting configuration for auth endpoints
 const authRateLimit = {
@@ -28,6 +29,22 @@ const verifyWalletSignature = async (req, res, next) => {
       return res.status(401).json({ error: 'Invalid signature' });
     }
 
+    // Look up the user by wallet address
+    const user = await User.findOne({ 
+      where: { wallet_address: wallet_address.toLowerCase() } 
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Check if user is banned
+    if (user.is_banned) {
+      return res.status(403).json({ error: 'Account is banned' });
+    }
+
+    // Set the user in the request object
+    req.user = user;
     next();
   } catch (error) {
     console.error('Signature verification error:', error);
@@ -36,21 +53,43 @@ const verifyWalletSignature = async (req, res, next) => {
 };
 
 // JWT authentication middleware
-const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+const authenticateToken = async (req, res, next) => {
+  try {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
-  if (!token) {
-    return res.status(401).json({ error: 'Access token required' });
-  }
-
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-    if (err) {
-      return res.status(403).json({ error: 'Invalid or expired token' });
+    if (!token) {
+      return res.status(401).json({ error: 'Access token required' });
     }
+
+    // Verify the JWT token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    // Fetch the user from the database
+    const user = await User.findByPk(decoded.userId);
+    
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Check if user is banned
+    if (user.is_banned) {
+      return res.status(403).json({ error: 'Account is banned' });
+    }
+
+    // Set the user in the request object
     req.user = user;
     next();
-  });
+  } catch (error) {
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ error: 'Token expired' });
+    }
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+    console.error('Authentication error:', error);
+    return res.status(500).json({ error: 'Authentication failed' });
+  }
 };
 
 module.exports = {
