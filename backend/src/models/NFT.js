@@ -134,11 +134,7 @@ const NFT = sequelize.define('NFT', {
   },
   collection_id: {
     type: DataTypes.UUID,
-    allowNull: true,
-    references: {
-      model: 'nft_collections',
-      key: 'id'
-    }
+    allowNull: true
   },
   edition_number: {
     type: DataTypes.INTEGER,

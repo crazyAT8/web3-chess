@@ -124,6 +124,10 @@ const Tournament = sequelize.define('Tournament', {
   metadata: {
     type: DataTypes.JSONB,
     defaultValue: {}
+  },
+  started_at: {
+    type: DataTypes.DATE,
+    allowNull: true
   }
 }, {
   tableName: 'tournaments',
