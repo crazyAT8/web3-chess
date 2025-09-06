@@ -3,6 +3,7 @@
 A multiplayer chess game platform powered by Web3.
 
 ## Features
+
 - Real-time chess gameplay with Socket.IO
 - Wallet-based login using Sign-In With Ethereum (SIWE)
 - Crypto wagers via smart contracts (Solidity + Hardhat)
@@ -10,6 +11,7 @@ A multiplayer chess game platform powered by Web3.
 - Game history tracking (optional IPFS)
 
 ## Tech Stack
+
 - Next.js (App Router, TypeScript)
 - Tailwind CSS
 - wagmi + viem + RainbowKit
