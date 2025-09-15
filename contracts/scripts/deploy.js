@@ -118,7 +118,7 @@ async function main() {
   // Save deployment info
   const deploymentInfo = {
     network: network.name,
-    chainId: network.chainId,
+    chainId: Number(network.chainId),
     deployer: deployer.address,
     contracts: {
       ChessToken: chessTokenAddress,
