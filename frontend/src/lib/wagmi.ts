@@ -3,7 +3,7 @@ import { mainnet, sepolia, polygon, polygonMumbai } from 'wagmi/chains';
 
 // Local Hardhat network configuration
 const localhost = {
-  id: 31337,
+  id: 1337,
   name: 'Hardhat Local',
   network: 'localhost',
   nativeCurrency: {

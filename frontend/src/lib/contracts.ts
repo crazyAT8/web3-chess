@@ -1,195 +1,26 @@
 import { getContract, type PublicClient, type WalletClient } from 'viem';
 import { usePublicClient, useWalletClient } from 'wagmi';
 
-// Contract addresses (will be set after deployment)
+// Import contract ABIs from artifacts
+import ChessTokenABI from './contracts/ChessToken.json';
+import ChessNFTABI from './contracts/ChessNFT.json';
+import ChessGameABI from './contracts/ChessGame.json';
+import ChessTournamentABI from './contracts/ChessTournament.json';
+
+// Contract addresses (deployed on Hardhat local network)
 export const CONTRACT_ADDRESSES = {
-  CHESS_TOKEN: process.env.NEXT_PUBLIC_CHESS_TOKEN_ADDRESS || '0x0000000000000000000000000000000000000000',
-  CHESS_NFT: process.env.NEXT_PUBLIC_CHESS_NFT_ADDRESS || '0x0000000000000000000000000000000000000000',
-  CHESS_GAME: process.env.NEXT_PUBLIC_CHESS_GAME_ADDRESS || '0x0000000000000000000000000000000000000000',
-  CHESS_TOURNAMENT: process.env.NEXT_PUBLIC_CHESS_TOURNAMENT_ADDRESS || '0x0000000000000000000000000000000000000000',
+  CHESS_TOKEN: process.env.NEXT_PUBLIC_CHESS_TOKEN_ADDRESS || '0x5FbDB2315678afecb367f032d93F642f64180aa3',
+  CHESS_NFT: process.env.NEXT_PUBLIC_CHESS_NFT_ADDRESS || '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0',
+  CHESS_GAME: process.env.NEXT_PUBLIC_CHESS_GAME_ADDRESS || '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512',
+  CHESS_TOURNAMENT: process.env.NEXT_PUBLIC_CHESS_TOURNAMENT_ADDRESS || '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9',
 } as const;
 
 // Contract ABIs - Loaded from Hardhat artifacts
-// These should be imported from the contracts/artifacts directory
 export const CONTRACT_ABIS = {
-  CHESS_TOKEN: [
-    // Basic ERC20 functions
-    {
-      "inputs": [],
-      "name": "name",
-      "outputs": [{"type": "string"}],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "symbol",
-      "outputs": [{"type": "string"}],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "decimals",
-      "outputs": [{"type": "uint8"}],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [{"type": "address"}],
-      "name": "balanceOf",
-      "outputs": [{"type": "uint256"}],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [{"type": "address"}, {"type": "uint256"}],
-      "name": "transfer",
-      "outputs": [{"type": "bool"}],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    // ChessFi specific functions
-    {
-      "inputs": [{"type": "uint256"}],
-      "name": "stake",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "unstake",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "claimRewards",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    }
-  ] as const,
-  CHESS_NFT: [
-    // Basic ERC721 functions
-    {
-      "inputs": [],
-      "name": "name",
-      "outputs": [{"type": "string"}],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "symbol",
-      "outputs": [{"type": "string"}],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [{"type": "uint256"}],
-      "name": "tokenURI",
-      "outputs": [{"type": "string"}],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [{"type": "address"}],
-      "name": "balanceOf",
-      "outputs": [{"type": "uint256"}],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    // ChessFi specific functions
-    {
-      "inputs": [{"type": "string"}],
-      "name": "mintNFT",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "mintChessSet",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    }
-  ] as const,
-  CHESS_GAME: [
-    // ChessFi game functions
-    {
-      "inputs": [{"type": "uint256"}],
-      "name": "createGame",
-      "outputs": [],
-      "stateMutability": "payable",
-      "type": "function"
-    },
-    {
-      "inputs": [{"type": "uint256"}],
-      "name": "joinGame",
-      "outputs": [],
-      "stateMutability": "payable",
-      "type": "function"
-    },
-    {
-      "inputs": [{"type": "uint256"}],
-      "name": "endGame",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [{"type": "address"}],
-      "name": "playerStats",
-      "outputs": [{"type": "uint256"}],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [{"type": "uint256"}],
-      "name": "games",
-      "outputs": [
-        {"type": "address"},
-        {"type": "address"},
-        {"type": "uint8"},
-        {"type": "uint256"},
-        {"type": "uint256"},
-        {"type": "uint256"},
-        {"type": "address"},
-        {"type": "bool"},
-        {"type": "bool"}
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    }
-  ] as const,
-  CHESS_TOURNAMENT: [
-    // ChessFi tournament functions
-    {
-      "inputs": [{"type": "uint256"}],
-      "name": "registerForTournament",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [{"type": "uint256"}],
-      "name": "getTournament",
-      "outputs": [
-        {"type": "string"},
-        {"type": "uint256"},
-        {"type": "uint256"},
-        {"type": "uint256"},
-        {"type": "bool"},
-        {"type": "bool"}
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    }
-  ] as const,
+  CHESS_TOKEN: ChessTokenABI.abi,
+  CHESS_NFT: ChessNFTABI.abi,
+  CHESS_GAME: ChessGameABI.abi,
+  CHESS_TOURNAMENT: ChessTournamentABI.abi,
 } as const;
 
 // Contract types
