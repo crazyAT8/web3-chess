@@ -2,6 +2,8 @@
 
 import React, { useState } from 'react';
 import { useChessGameCreate, useChessGameJoin } from '@/hooks/useContractWrite';
+import { useWriteContract } from 'wagmi';
+import { CONTRACT_ADDRESSES, CONTRACT_ABIS } from '@/lib/contracts';
 import { useTransactionState } from '@/hooks/useContractWrite';
 import { contractUtils } from '@/lib/contractUtils';
 import { Button } from '@/components/ui/button';
@@ -24,6 +26,7 @@ export function GameCreationForm() {
   const createGame = useChessGameCreate();
   const joinGame = useChessGameJoin();
   const transactionState = useTransactionState();
+  const { writeContract } = useWriteContract();
   
   // Handle create game
   const handleCreateGame = async () => {
@@ -36,7 +39,10 @@ export function GameCreationForm() {
       transactionState.setLoading(true);
       transactionState.setErrorMsg(null);
       
-      await createGame.writeAsync({
+      writeContract({
+        address: CONTRACT_ADDRESSES.CHESS_GAME as `0x${string}`,
+        abi: CONTRACT_ABIS.CHESS_GAME,
+        functionName: 'createGame',
         args: [contractUtils.parseETH(stakeAmount)],
         value: contractUtils.parseETH(stakeAmount)
       });
@@ -61,7 +67,10 @@ export function GameCreationForm() {
       transactionState.setLoading(true);
       transactionState.setErrorMsg(null);
       
-      await joinGame.writeAsync({
+      writeContract({
+        address: CONTRACT_ADDRESSES.CHESS_GAME as `0x${string}`,
+        abi: CONTRACT_ABIS.CHESS_GAME,
+        functionName: 'joinGame',
         args: [parseInt(gameId)],
         value: contractUtils.parseETH(stakeAmount)
       });

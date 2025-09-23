@@ -2,6 +2,8 @@
 
 import React, { useState } from 'react';
 import { useChessNFTMint, useChessNFTMintChessSet } from '@/hooks/useContractWrite';
+import { useWriteContract } from 'wagmi';
+import { CONTRACT_ADDRESSES, CONTRACT_ABIS } from '@/lib/contracts';
 import { useTransactionState } from '@/hooks/useContractWrite';
 import { contractUtils } from '@/lib/contractUtils';
 import { Button } from '@/components/ui/button';
@@ -49,6 +51,7 @@ export function NFTMintForm() {
   const singleMint = useChessNFTMint();
   const setMint = useChessNFTMintChessSet();
   const transactionState = useTransactionState();
+  const { writeContract } = useWriteContract();
   
   // Handle single NFT mint
   const handleSingleMint = async () => {
@@ -61,7 +64,10 @@ export function NFTMintForm() {
       transactionState.setLoading(true);
       transactionState.setErrorMsg(null);
       
-      await singleMint.writeAsync({
+      writeContract({
+        address: CONTRACT_ADDRESSES.CHESS_NFT as `0x${string}`,
+        abi: CONTRACT_ABIS.CHESS_NFT,
+        functionName: 'mintNFT',
         args: [
           parseInt(nftType),
           parseInt(rarity),
@@ -97,7 +103,10 @@ export function NFTMintForm() {
       transactionState.setLoading(true);
       transactionState.setErrorMsg(null);
       
-      await setMint.writeAsync({
+      writeContract({
+        address: CONTRACT_ADDRESSES.CHESS_NFT as `0x${string}`,
+        abi: CONTRACT_ABIS.CHESS_NFT,
+        functionName: 'mintChessSet',
         args: [chessSetName, chessSetDescription, chessSetImageURI, pieceURIs],
         value: contractUtils.parseETH('0.02') // 2x mint fee for set
       });

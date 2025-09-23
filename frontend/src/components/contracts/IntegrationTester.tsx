@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, CheckCircle, XCircle, AlertTriangle, Play, Stop } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, AlertTriangle, Play } from 'lucide-react';
 import { areContractsReady, getTestContractAddresses, TEST_CONFIG } from '@/config/test-contracts';
 import { useContractContext } from '@/contexts/ContractContext';
 import { useChessTokenBalance, useChessNFTBalance } from '@/hooks/useContractRead';
@@ -21,7 +21,7 @@ interface TestResult {
 
 export function IntegrationTester() {
   const { isConnected, address } = useAccount();
-  const { contracts } = useContractContext();
+  const { chessToken, chessNFT, chessGame, chessTournament } = useContractContext();
   const [testResults, setTestResults] = useState<TestResult[]>([]);
   const [isRunning, setIsRunning] = useState(false);
   const [currentTest, setCurrentTest] = useState<string>('');
@@ -74,12 +74,9 @@ export function IntegrationTester() {
 
     // Test 3: Contract Instances
     await runTest(2, 'Contract Instances', async () => {
-      if (!contracts) {
-        throw new Error('Contract context not available');
-      }
-      
+      const contracts = { chessToken, chessNFT, chessGame, chessTournament };
       const contractNames = ['chessToken', 'chessNFT', 'chessGame', 'chessTournament'];
-      const missingContracts = contractNames.filter(name => !contracts[name]);
+      const missingContracts = contractNames.filter(name => !contracts[name as keyof typeof contracts]);
       
       if (missingContracts.length > 0) {
         throw new Error(`Missing contracts: ${missingContracts.join(', ')}`);
@@ -101,7 +98,7 @@ export function IntegrationTester() {
       }
       
       return { 
-        tokenBalance: tokenBalance ? contractUtils.formatTokenAmount(tokenBalance) : '0',
+        tokenBalance: tokenBalance ? contractUtils.formatTokenAmount(tokenBalance as bigint) : '0',
         nftBalance: nftBalance ? nftBalance.toString() : '0'
       };
     });

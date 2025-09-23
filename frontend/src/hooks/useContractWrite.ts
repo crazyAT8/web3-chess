@@ -12,11 +12,7 @@ export function useContractWrite(
   const contractAddress = CONTRACT_ADDRESSES[contractName];
   const contractABI = CONTRACT_ABIS[contractName];
 
-  const { data: hash, error, isPending, write, writeAsync } = useWriteContract({
-    address: contractAddress as `0x${string}`,
-    abi: contractABI,
-    functionName,
-  });
+  const { data: hash, error, isPending, writeContract, writeContractAsync } = useWriteContract();
 
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
     hash,
@@ -28,8 +24,18 @@ export function useContractWrite(
     isPending,
     isConfirming,
     isSuccess,
-    write,
-    writeAsync,
+    write: (args: any[]) => writeContract({
+      address: contractAddress as `0x${string}`,
+      abi: contractABI,
+      functionName,
+      args,
+    }),
+    writeAsync: (args: any[]) => writeContractAsync({
+      address: contractAddress as `0x${string}`,
+      abi: contractABI,
+      functionName,
+      args,
+    }),
     isLoading: isPending || isConfirming,
   };
 }

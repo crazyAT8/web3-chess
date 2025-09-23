@@ -2,6 +2,8 @@
 
 import React, { useState } from 'react';
 import { useChessTokenStake, useChessTokenUnstake, useChessTokenClaimRewards } from '@/hooks/useContractWrite';
+import { useWriteContract } from 'wagmi';
+import { CONTRACT_ADDRESSES, CONTRACT_ABIS } from '@/lib/contracts';
 import { useChessTokenBalance, useChessTokenStakingInfo } from '@/hooks/useContractRead';
 import { useTransactionState } from '@/hooks/useContractWrite';
 import { contractUtils } from '@/lib/contractUtils';
@@ -23,6 +25,7 @@ export function TokenStakingForm() {
   const unstake = useChessTokenUnstake();
   const claimRewards = useChessTokenClaimRewards();
   const transactionState = useTransactionState();
+  const { writeContract } = useWriteContract();
   
   // Read data
   const { data: tokenBalance } = useChessTokenBalance();
@@ -35,7 +38,7 @@ export function TokenStakingForm() {
       return;
     }
     
-    if (tokenBalance && parseFloat(stakeAmount) > parseFloat(contractUtils.formatTokenAmount(tokenBalance))) {
+    if (tokenBalance && parseFloat(stakeAmount) > parseFloat(contractUtils.formatTokenAmount(tokenBalance as bigint))) {
       transactionState.setErrorMsg('Insufficient token balance');
       return;
     }
@@ -44,7 +47,10 @@ export function TokenStakingForm() {
       transactionState.setLoading(true);
       transactionState.setErrorMsg(null);
       
-      await stake.writeAsync({
+      writeContract({
+        address: CONTRACT_ADDRESSES.CHESS_TOKEN as `0x${string}`,
+        abi: CONTRACT_ABIS.CHESS_TOKEN,
+        functionName: 'stake',
         args: [contractUtils.parseTokenAmount(stakeAmount)]
       });
       
@@ -64,7 +70,7 @@ export function TokenStakingForm() {
       return;
     }
     
-    if (stakingInfo && parseFloat(unstakeAmount) > parseFloat(contractUtils.formatTokenAmount(stakingInfo.stakedAmount))) {
+    if (stakingInfo && parseFloat(unstakeAmount) > parseFloat(contractUtils.formatTokenAmount((stakingInfo as any).stakedAmount))) {
       transactionState.setErrorMsg('Insufficient staked amount');
       return;
     }
@@ -73,7 +79,10 @@ export function TokenStakingForm() {
       transactionState.setLoading(true);
       transactionState.setErrorMsg(null);
       
-      await unstake.writeAsync({
+      writeContract({
+        address: CONTRACT_ADDRESSES.CHESS_TOKEN as `0x${string}`,
+        abi: CONTRACT_ABIS.CHESS_TOKEN,
+        functionName: 'unstake',
         args: [contractUtils.parseTokenAmount(unstakeAmount)]
       });
       
@@ -92,7 +101,11 @@ export function TokenStakingForm() {
       transactionState.setLoading(true);
       transactionState.setErrorMsg(null);
       
-      await claimRewards.writeAsync();
+      writeContract({
+        address: CONTRACT_ADDRESSES.CHESS_TOKEN as `0x${string}`,
+        abi: CONTRACT_ABIS.CHESS_TOKEN,
+        functionName: 'claimRewards'
+      });
       
       transactionState.setSuccessState(true);
     } catch (error) {
@@ -108,8 +121,8 @@ export function TokenStakingForm() {
   const calculateRewards = () => {
     if (!stakingInfo) return '0';
     
-    const stakedAmount = parseFloat(contractUtils.formatTokenAmount(stakingInfo.stakedAmount));
-    const lastRewardTime = stakingInfo.lastRewardTime;
+    const stakedAmount = parseFloat(contractUtils.formatTokenAmount((stakingInfo as any).stakedAmount));
+    const lastRewardTime = (stakingInfo as any).lastRewardTime;
     const currentTime = Math.floor(Date.now() / 1000);
     const timeDiff = currentTime - lastRewardTime;
     const daysDiff = timeDiff / (24 * 60 * 60);
@@ -141,7 +154,7 @@ export function TokenStakingForm() {
                 <span className="text-sm font-medium text-blue-300">Token Balance</span>
               </div>
               <div className="text-2xl font-bold text-white">
-                {tokenBalance ? contractUtils.formatTokenAmount(tokenBalance) : '0'} CHESS
+                {tokenBalance ? contractUtils.formatTokenAmount(tokenBalance as bigint) : '0'} CHESS
               </div>
             </div>
             
@@ -151,7 +164,7 @@ export function TokenStakingForm() {
                 <span className="text-sm font-medium text-green-300">Staked Amount</span>
               </div>
               <div className="text-2xl font-bold text-white">
-                {stakingInfo ? contractUtils.formatTokenAmount(stakingInfo.stakedAmount) : '0'} CHESS
+                {stakingInfo ? contractUtils.formatTokenAmount((stakingInfo as any).stakedAmount) : '0'} CHESS
               </div>
             </div>
             
@@ -243,7 +256,7 @@ export function TokenStakingForm() {
                       <div className="flex justify-between">
                         <span className="text-gray-300">Current Balance:</span>
                         <span className="text-white">
-                          {tokenBalance ? contractUtils.formatTokenAmount(tokenBalance) : '0'} CHESS
+                          {tokenBalance ? contractUtils.formatTokenAmount(tokenBalance as bigint) : '0'} CHESS
                         </span>
                       </div>
                       <div className="flex justify-between">
@@ -254,7 +267,7 @@ export function TokenStakingForm() {
                         <span className="text-gray-300">Remaining Balance:</span>
                         <span className="text-white">
                           {tokenBalance && stakeAmount 
-                            ? (parseFloat(contractUtils.formatTokenAmount(tokenBalance)) - parseFloat(stakeAmount)).toFixed(2)
+                            ? (parseFloat(contractUtils.formatTokenAmount(tokenBalance as bigint)) - parseFloat(stakeAmount)).toFixed(2)
                             : '0'
                           } CHESS
                         </span>
@@ -330,7 +343,7 @@ export function TokenStakingForm() {
                       <div className="flex justify-between">
                         <span className="text-gray-300">Currently Staked:</span>
                         <span className="text-white">
-                          {stakingInfo ? contractUtils.formatTokenAmount(stakingInfo.stakedAmount) : '0'} CHESS
+                          {stakingInfo ? contractUtils.formatTokenAmount((stakingInfo as any).stakedAmount) : '0'} CHESS
                         </span>
                       </div>
                       <div className="flex justify-between">
@@ -341,7 +354,7 @@ export function TokenStakingForm() {
                         <span className="text-gray-300">Remaining Staked:</span>
                         <span className="text-white">
                           {stakingInfo && unstakeAmount 
-                            ? (parseFloat(contractUtils.formatTokenAmount(stakingInfo.stakedAmount)) - parseFloat(unstakeAmount)).toFixed(2)
+                            ? (parseFloat(contractUtils.formatTokenAmount((stakingInfo as any).stakedAmount)) - parseFloat(unstakeAmount)).toFixed(2)
                             : '0'
                           } CHESS
                         </span>
@@ -388,7 +401,7 @@ export function TokenStakingForm() {
                       <div className="flex justify-between">
                         <span className="text-gray-300">Last Claim:</span>
                         <span className="text-white">
-                          {stakingInfo ? new Date(Number(stakingInfo.lastRewardTime) * 1000).toLocaleDateString() : 'Never'}
+                          {stakingInfo ? new Date(Number((stakingInfo as any).lastRewardTime) * 1000).toLocaleDateString() : 'Never'}
                         </span>
                       </div>
                     </div>
@@ -422,14 +435,14 @@ export function TokenStakingForm() {
                       <div className="flex justify-between">
                         <span className="text-gray-300">Current Balance:</span>
                         <span className="text-white">
-                          {tokenBalance ? contractUtils.formatTokenAmount(tokenBalance) : '0'} CHESS
+                          {tokenBalance ? contractUtils.formatTokenAmount(tokenBalance as bigint) : '0'} CHESS
                         </span>
                       </div>
                       <div className="flex justify-between border-t border-blue-800/30 pt-2">
                         <span className="text-gray-300">New Balance After Claim:</span>
                         <span className="text-green-400 font-medium">
                           {tokenBalance && pendingRewards 
-                            ? (parseFloat(contractUtils.formatTokenAmount(tokenBalance)) + parseFloat(pendingRewards)).toFixed(2)
+                            ? (parseFloat(contractUtils.formatTokenAmount(tokenBalance as bigint)) + parseFloat(pendingRewards)).toFixed(2)
                             : '0'
                           } CHESS
                         </span>
