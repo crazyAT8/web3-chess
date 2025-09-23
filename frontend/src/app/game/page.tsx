@@ -9,154 +9,51 @@ import { Crown, Clock, Coins } from "lucide-react"
 import Link from "next/link"
 import { GameCreationForm } from "@/components/contracts/GameCreationForm"
 import { ContractTester } from "@/components/contracts/ContractTester"
+import { 
+  createInitialGameState, 
+  isValidMove, 
+  makeMove, 
+  getPieceSymbol, 
+  formatTime,
+  type GameState
+} from "@/components/chess-utils"
 
-type PieceType = "king" | "queen" | "rook" | "bishop" | "knight" | "pawn"
-type PieceColor = "white" | "black"
-
-interface Piece {
-  type: PieceType
-  color: PieceColor
-}
-
-interface Square {
-  piece: Piece | null
-  isSelected: boolean
-  isValidMove: boolean
-}
-
-const initialBoard: Square[][] = [
-  [
-    { piece: { type: "rook", color: "black" }, isSelected: false, isValidMove: false },
-    { piece: { type: "knight", color: "black" }, isSelected: false, isValidMove: false },
-    { piece: { type: "bishop", color: "black" }, isSelected: false, isValidMove: false },
-    { piece: { type: "queen", color: "black" }, isSelected: false, isValidMove: false },
-    { piece: { type: "king", color: "black" }, isSelected: false, isValidMove: false },
-    { piece: { type: "bishop", color: "black" }, isSelected: false, isValidMove: false },
-    { piece: { type: "knight", color: "black" }, isSelected: false, isValidMove: false },
-    { piece: { type: "rook", color: "black" }, isSelected: false, isValidMove: false },
-  ],
-  Array(8)
-    .fill(null)
-    .map(() => ({ piece: { type: "pawn", color: "black" }, isSelected: false, isValidMove: false })),
-  ...Array(4)
-    .fill(null)
-    .map(() =>
-      Array(8)
-        .fill(null)
-        .map(() => ({ piece: null, isSelected: false, isValidMove: false })),
-    ),
-  Array(8)
-    .fill(null)
-    .map(() => ({ piece: { type: "pawn", color: "white" }, isSelected: false, isValidMove: false })),
-  [
-    { piece: { type: "rook", color: "white" }, isSelected: false, isValidMove: false },
-    { piece: { type: "knight", color: "white" }, isSelected: false, isValidMove: false },
-    { piece: { type: "bishop", color: "white" }, isSelected: false, isValidMove: false },
-    { piece: { type: "queen", color: "white" }, isSelected: false, isValidMove: false },
-    { piece: { type: "king", color: "white" }, isSelected: false, isValidMove: false },
-    { piece: { type: "bishop", color: "white" }, isSelected: false, isValidMove: false },
-    { piece: { type: "knight", color: "white" }, isSelected: false, isValidMove: false },
-    { piece: { type: "rook", color: "white" }, isSelected: false, isValidMove: false },
-  ],
-]
-
-const pieceSymbols: Record<PieceType, Record<PieceColor, string>> = {
-  king: { white: "♔", black: "♚" },
-  queen: { white: "♕", black: "♛" },
-  rook: { white: "♖", black: "♜" },
-  bishop: { white: "♗", black: "♝" },
-  knight: { white: "♘", black: "♞" },
-  pawn: { white: "♙", black: "♟" },
-}
+// Use the chess engine's initial game state
+const initialGameState = createInitialGameState()
 
 export default function Game() {
-  const [board, setBoard] = useState<Square[][]>(initialBoard)
+  const [gameState, setGameState] = useState<GameState>(initialGameState)
   const [selectedSquare, setSelectedSquare] = useState<[number, number] | null>(null)
-  const [currentPlayer, setCurrentPlayer] = useState<PieceColor>("white")
-  const [gameTime, setGameTime] = useState({ white: 600, black: 600 }) // 10 minutes each
-  const [gameStatus, setGameStatus] = useState<"playing" | "check" | "checkmate" | "draw">("playing")
+  const [whiteTime] = useState(600) // 10 minutes
+  const [blackTime] = useState(600) // 10 minutes
 
   const handleSquareClick = useCallback(
     (row: number, col: number) => {
       if (selectedSquare) {
         const [selectedRow, selectedCol] = selectedSquare
-        const newBoard = board.map((r) => r.map((s) => ({ ...s, isSelected: false, isValidMove: false })))
+        const piece = gameState.board[selectedRow][selectedCol].piece
 
-        // Move piece if valid
-        if (board[row][col].isValidMove) {
-          newBoard[row][col].piece = board[selectedRow][selectedCol].piece
-          newBoard[selectedRow][selectedCol].piece = null
-          setCurrentPlayer(currentPlayer === "white" ? "black" : "white")
+        if (piece && isValidMove(selectedRow, selectedCol, row, col, piece, gameState.board, gameState)) {
+          try {
+            const newGameState = makeMove(selectedRow, selectedCol, row, col, gameState)
+            setGameState(newGameState)
+          } catch (error) {
+            console.error("Invalid move:", error)
+          }
         }
 
-        setBoard(newBoard)
         setSelectedSquare(null)
       } else {
         // Select piece
-        const piece = board[row][col].piece
-        if (piece && piece.color === currentPlayer) {
-          const newBoard = board.map((r, rIndex) =>
-            r.map((s, cIndex) => ({
-              ...s,
-              isSelected: rIndex === row && cIndex === col,
-              isValidMove:
-                rIndex === row && cIndex === col ? false : isValidMove(row, col, rIndex, cIndex, piece, board),
-            })),
-          )
-          setBoard(newBoard)
+        const piece = gameState.board[row][col].piece
+        if (piece && piece.color === gameState.currentPlayer) {
           setSelectedSquare([row, col])
         }
       }
     },
-    [board, selectedSquare, currentPlayer],
+    [gameState, selectedSquare],
   )
 
-  const isValidMove = (
-    fromRow: number,
-    fromCol: number,
-    toRow: number,
-    toCol: number,
-    piece: Piece,
-    board: Square[][],
-  ): boolean => {
-    // Simplified move validation - in a real game, this would be much more complex
-    const targetPiece = board[toRow][toCol].piece
-    if (targetPiece && targetPiece.color === piece.color) return false
-
-    const rowDiff = Math.abs(toRow - fromRow)
-    const colDiff = Math.abs(toCol - fromCol)
-
-    switch (piece.type) {
-      case "pawn":
-        const direction = piece.color === "white" ? -1 : 1
-        const startRow = piece.color === "white" ? 6 : 1
-        if (colDiff === 0) {
-          if (toRow === fromRow + direction && !targetPiece) return true
-          if (fromRow === startRow && toRow === fromRow + 2 * direction && !targetPiece) return true
-        } else if (colDiff === 1 && toRow === fromRow + direction && targetPiece) {
-          return true
-        }
-        return false
-      case "rook":
-        return rowDiff === 0 || colDiff === 0
-      case "bishop":
-        return rowDiff === colDiff
-      case "queen":
-        return rowDiff === 0 || colDiff === 0 || rowDiff === colDiff
-      case "king":
-        return rowDiff <= 1 && colDiff <= 1
-      case "knight":
-        return (rowDiff === 2 && colDiff === 1) || (rowDiff === 1 && colDiff === 2)
-      default:
-        return false
-    }
-  }
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins}:${secs.toString().padStart(2, "0")}`
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
@@ -187,7 +84,7 @@ export default function Game() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div
-                  className={`flex items-center space-x-3 p-3 rounded-lg ${currentPlayer === "black" ? "bg-purple-600/20 border border-purple-600/30" : ""}`}
+                  className={`flex items-center space-x-3 p-3 rounded-lg ${gameState.currentPlayer === "black" ? "bg-purple-600/20 border border-purple-600/30" : ""}`}
                 >
                   <Avatar>
                     <AvatarImage src="/placeholder.svg?height=40&width=40" />
@@ -200,13 +97,13 @@ export default function Game() {
                   <div className="text-right">
                     <div className="text-white font-mono">
                       <Clock className="inline h-4 w-4 mr-1" />
-                      {formatTime(gameTime.black)}
+                      {formatTime(blackTime)}
                     </div>
                   </div>
                 </div>
 
                 <div
-                  className={`flex items-center space-x-3 p-3 rounded-lg ${currentPlayer === "white" ? "bg-purple-600/20 border border-purple-600/30" : ""}`}
+                  className={`flex items-center space-x-3 p-3 rounded-lg ${gameState.currentPlayer === "white" ? "bg-purple-600/20 border border-purple-600/30" : ""}`}
                 >
                   <Avatar>
                     <AvatarImage src="/placeholder.svg?height=40&width=40" />
@@ -219,7 +116,7 @@ export default function Game() {
                   <div className="text-right">
                     <div className="text-white font-mono">
                       <Clock className="inline h-4 w-4 mr-1" />
-                      {formatTime(gameTime.white)}
+                      {formatTime(whiteTime)}
                     </div>
                   </div>
                 </div>
@@ -234,15 +131,15 @@ export default function Game() {
               <CardContent className="space-y-3">
                 <div className="flex justify-between">
                   <span className="text-gray-300">Status:</span>
-                  <Badge className="bg-green-600/20 text-green-300 border-green-600/30">{gameStatus}</Badge>
+                  <Badge className="bg-green-600/20 text-green-300 border-green-600/30">{gameState.gameStatus}</Badge>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-300">Turn:</span>
-                  <span className="text-white capitalize">{currentPlayer}</span>
+                  <span className="text-white capitalize">{gameState.currentPlayer}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-300">Moves:</span>
-                  <span className="text-white">12</span>
+                  <span className="text-white">{gameState.moveHistory.length}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-300">Stake:</span>
@@ -276,11 +173,19 @@ export default function Game() {
                 <div className="space-y-2">
                   <div>
                     <div className="text-gray-300 text-sm mb-1">Black:</div>
-                    <div className="text-2xl">♙♗</div>
+                    <div className="text-2xl">
+                      {gameState.capturedPieces.black.map((piece, index) => (
+                        <span key={index}>{getPieceSymbol(piece)}</span>
+                      ))}
+                    </div>
                   </div>
                   <div>
                     <div className="text-gray-300 text-sm mb-1">White:</div>
-                    <div className="text-2xl">♟♞</div>
+                    <div className="text-2xl">
+                      {gameState.capturedPieces.white.map((piece, index) => (
+                        <span key={index}>{getPieceSymbol(piece)}</span>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -293,35 +198,42 @@ export default function Game() {
               <CardContent className="p-6">
                 <div className="aspect-square max-w-2xl mx-auto">
                   <div className="grid grid-cols-8 gap-0 border-2 border-purple-600/30 rounded-lg overflow-hidden">
-                    {board.map((row, rowIndex) =>
-                      row.map((square, colIndex) => (
-                        <button
-                          key={`${rowIndex}-${colIndex}`}
-                          className={`
-                            aspect-square flex items-center justify-center text-4xl font-bold transition-all duration-200
-                            ${(rowIndex + colIndex) % 2 === 0 ? "bg-amber-100" : "bg-amber-800"}
-                            ${square.isSelected ? "ring-4 ring-purple-500" : ""}
-                            ${square.isValidMove ? "ring-2 ring-green-500 bg-green-200/20" : ""}
-                            hover:brightness-110
-                          `}
-                          onClick={() => handleSquareClick(rowIndex, colIndex)}
-                        >
-                          {square.piece && (
-                            <span
-                              className={
-                                square.piece.color === "white"
-                                  ? "text-white drop-shadow-lg"
-                                  : "text-black drop-shadow-lg"
-                              }
-                            >
-                              {pieceSymbols[square.piece.type][square.piece.color]}
-                            </span>
-                          )}
-                          {square.isValidMove && !square.piece && (
-                            <div className="w-4 h-4 bg-green-500 rounded-full opacity-60" />
-                          )}
-                        </button>
-                      )),
+                    {gameState.board.map((row, rowIndex) =>
+                      row.map((square, colIndex) => {
+                        const isSelected = selectedSquare && selectedSquare[0] === rowIndex && selectedSquare[1] === colIndex
+                        const piece = square.piece
+                        const isMoveValid = piece && selectedSquare && 
+                          isValidMove(selectedSquare[0], selectedSquare[1], rowIndex, colIndex, piece, gameState.board, gameState)
+                        
+                        return (
+                          <button
+                            key={`${rowIndex}-${colIndex}`}
+                            className={`
+                              aspect-square flex items-center justify-center text-4xl font-bold transition-all duration-200
+                              ${(rowIndex + colIndex) % 2 === 0 ? "bg-amber-100" : "bg-amber-800"}
+                              ${isSelected ? "ring-4 ring-purple-500" : ""}
+                              ${isMoveValid ? "ring-2 ring-green-500 bg-green-200/20" : ""}
+                              hover:brightness-110
+                            `}
+                            onClick={() => handleSquareClick(rowIndex, colIndex)}
+                          >
+                            {square.piece && (
+                              <span
+                                className={
+                                  square.piece.color === "white"
+                                    ? "text-white drop-shadow-lg"
+                                    : "text-black drop-shadow-lg"
+                                }
+                              >
+                                {getPieceSymbol(square.piece)}
+                              </span>
+                            )}
+                            {isMoveValid && !square.piece && (
+                              <div className="w-4 h-4 bg-green-500 rounded-full opacity-60" />
+                            )}
+                          </button>
+                        )
+                      }),
                     )}
                   </div>
                 </div>
