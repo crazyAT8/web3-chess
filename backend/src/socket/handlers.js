@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const { User, Game } = require('../models');
+const ChessGame = require('../utils/chess');
 
 // Store active connections
 const activeConnections = new Map(); // userId -> socket
@@ -11,6 +12,18 @@ const setupSocketHandlers = (io) => {
   io.use(async (socket, next) => {
     try {
       const token = socket.handshake.auth.token;
+      
+      // For demo purposes, allow demo token
+      if (token === 'demo-token') {
+        socket.userId = 'demo-user-1';
+        socket.user = { 
+          id: 'demo-user-1', 
+          username: 'DemoPlayer1',
+          is_banned: false 
+        };
+        return next();
+      }
+      
       if (!token) {
         return next(new Error('Authentication error'));
       }
@@ -26,6 +39,7 @@ const setupSocketHandlers = (io) => {
       socket.user = user;
       next();
     } catch (error) {
+      console.log('Auth error:', error.message);
       next(new Error('Authentication error'));
     }
   });
@@ -155,23 +169,79 @@ const setupSocketHandlers = (io) => {
           return;
         }
 
+        // Initialize chess game with current FEN
+        const chessGame = new ChessGame(game.current_fen || undefined);
+        
+        // Validate the move
+        const moveObj = {
+          from: move.from,
+          to: move.to,
+          promotion: move.promotion || undefined
+        };
+
+        if (!chessGame.validateMove(moveObj)) {
+          socket.emit('error', { message: 'Invalid move' });
+          return;
+        }
+
+        // Make the move
+        const moveResult = chessGame.makeMove(moveObj);
+        
+        if (!moveResult.success) {
+          socket.emit('error', { message: moveResult.error || 'Invalid move' });
+          return;
+        }
+
+        // Create move record
+        const moveRecord = {
+          from: move.from,
+          to: move.to,
+          promotion: move.promotion,
+          piece: moveResult.move.piece,
+          san: moveResult.move.san,
+          timestamp: new Date().toISOString(),
+          fen: moveResult.fen
+        };
+
         // Add move to game
-        await game.addMove(move);
+        await game.addMove(moveRecord);
         
         // Update game state
-        game.current_turn = game.current_turn === 'white' ? 'black' : 'white';
+        game.current_fen = moveResult.fen;
+        game.current_turn = moveResult.turn === 'w' ? 'white' : 'black';
+
+        // Check for game end conditions
+        if (moveResult.isGameOver) {
+          game.status = 'completed';
+          game.completed_at = new Date();
+          
+          if (moveResult.inCheckmate) {
+            game.result = moveResult.turn === 'w' ? 'black_win' : 'white_win';
+            game.winner_id = moveResult.turn === 'w' ? game.black_player_id : game.white_player_id;
+          } else if (moveResult.inStalemate || moveResult.inDraw) {
+            game.result = 'draw';
+            game.is_draw = true;
+          }
+        }
+
         await game.save();
 
         // Broadcast move to all players in the game
         io.to(`game:${gameId}`).emit('move-made', {
-          move,
+          move: moveRecord,
           player: socket.userId,
           username: socket.user.username,
           timestamp: new Date().toISOString(),
           gameState: {
             currentTurn: game.current_turn,
+            currentFen: game.current_fen,
             moves: game.moves,
-            status: game.status
+            status: game.status,
+            result: game.result,
+            isCheck: moveResult.inCheck,
+            isCheckmate: moveResult.inCheckmate,
+            isStalemate: moveResult.inStalemate,
+            isDraw: moveResult.inDraw
           }
         });
 

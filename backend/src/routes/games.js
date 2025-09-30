@@ -2,6 +2,7 @@ const express = require('express');
 const { Game, User } = require('../models');
 const { asyncHandler, AppError } = require('../middleware/errorHandler');
 const Joi = require('joi');
+const ChessGame = require('../utils/chess');
 
 const router = express.Router();
 
@@ -114,6 +115,9 @@ router.post('/', asyncHandler(async (req, res) => {
   const white_player_id = isWhite ? userId : opponent_id;
   const black_player_id = isWhite ? opponent_id : userId;
 
+  // Initialize chess game for FEN
+  const chessGame = new ChessGame();
+  
   const game = await Game.create({
     white_player_id,
     black_player_id,
@@ -121,7 +125,9 @@ router.post('/', asyncHandler(async (req, res) => {
     time_control,
     increment,
     stake_amount,
-    status: 'pending'
+    status: 'pending',
+    current_fen: chessGame.getFEN(),
+    current_turn: 'white'
   });
 
   const gameWithPlayers = await Game.findByPk(game.id, {
@@ -213,31 +219,56 @@ router.post('/:gameId/move', asyncHandler(async (req, res) => {
     throw new AppError('Not your turn', 400);
   }
 
-  // Here you would implement chess move validation
-  // For now, we'll accept any move
+  // Initialize chess game with current FEN
+  const chessGame = new ChessGame(game.current_fen || undefined);
+  
+  // Validate the move
+  const moveObj = {
+    from,
+    to,
+    promotion: promotion || undefined
+  };
+
+  if (!chessGame.validateMove(moveObj)) {
+    throw new AppError('Invalid move', 400);
+  }
+
+  // Make the move
+  const moveResult = chessGame.makeMove(moveObj);
+  
+  if (!moveResult.success) {
+    throw new AppError(moveResult.error || 'Invalid move', 400);
+  }
+
+  // Create move record
   const move = {
     from,
     to,
     promotion,
-    piece: 'p', // This would be determined by the chess logic
-    san: `${from}-${to}${promotion ? `=${promotion.toUpperCase()}` : ''}`,
-    timestamp: new Date().toISOString()
+    piece: moveResult.move.piece,
+    san: moveResult.move.san,
+    timestamp: new Date().toISOString(),
+    fen: moveResult.fen
   };
 
   await game.addMove(move);
 
-  // Update current FEN (this would be calculated by chess logic)
-  // For now, we'll just update the turn
-  game.current_turn = game.current_turn === 'white' ? 'black' : 'white';
+  // Update game state
+  game.current_fen = moveResult.fen;
+  game.current_turn = moveResult.turn === 'w' ? 'white' : 'black';
 
-  // Check for game end conditions (simplified)
-  // In a real implementation, you'd use a chess engine
-  if (game.moves.length > 50) {
-    // Simple draw condition for demonstration
+  // Check for game end conditions
+  if (moveResult.isGameOver) {
     game.status = 'completed';
-    game.result = 'draw';
-    game.is_draw = true;
     game.completed_at = new Date();
+    
+    if (moveResult.inCheckmate) {
+      game.result = moveResult.turn === 'w' ? 'black_win' : 'white_win';
+      game.winner_id = moveResult.turn === 'w' ? game.black_player_id : game.white_player_id;
+    } else if (moveResult.inStalemate || moveResult.inDraw) {
+      game.result = 'draw';
+      game.is_draw = true;
+    }
   }
 
   await game.save();
