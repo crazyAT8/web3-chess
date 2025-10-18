@@ -16,6 +16,7 @@ const gameRoutes = require('./routes/games');
 const tournamentRoutes = require('./routes/tournaments');
 const nftRoutes = require('./routes/nfts');
 const leaderboardRoutes = require('./routes/leaderboard');
+const validationRoutes = require('./routes/validation');
 const { errorHandler } = require('./middleware/errorHandler');
 const { authenticateToken } = require('./middleware/auth');
 
@@ -65,6 +66,7 @@ app.use('/api/games', authenticateToken, gameRoutes);
 app.use('/api/tournaments', authenticateToken, tournamentRoutes);
 app.use('/api/nfts', authenticateToken, nftRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
+app.use('/api/validation', validationRoutes);
 
 // Socket.IO setup
 setupSocketHandlers(io);

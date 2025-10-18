@@ -18,8 +18,12 @@ import {
   formatTime,
   FENToBoard,
   createGameStateFromBackend,
-  type GameState
+  promotePawn,
+  validateMoveWithBackend,
+  type GameState,
+  type PieceType
 } from "@/components/chess-utils"
+import { PromotionDialog } from "@/components/PromotionDialog"
 import { useSocket } from "@/contexts/SocketContext"
 
 // Use the chess engine's initial game state
@@ -31,10 +35,11 @@ export default function Game() {
   const [whiteTime] = useState(600) // 10 minutes
   const [blackTime] = useState(600) // 10 minutes
   const [gameId, setGameId] = useState<string | null>(null)
-  const [isConnected] = useState(false)
+  // const [isConnected] = useState(false) // Removed unused variable
   const [chatMessages, setChatMessages] = useState<any[]>([])
   const [newMessage, setNewMessage] = useState("")
   const [lastMoveTimestamp, setLastMoveTimestamp] = useState<number>(0)
+  const [showPromotionDialog, setShowPromotionDialog] = useState(false)
   
   const { socket, isConnected: socketConnected, joinGame, makeMove: socketMakeMove, sendChatMessage } = useSocket()
 
@@ -185,29 +190,36 @@ export default function Game() {
   }, [socketConnected, gameId, joinGame])
 
   const handleSquareClick = useCallback(
-    (row: number, col: number) => {
+    async (row: number, col: number) => {
       if (selectedSquare) {
         const [selectedRow, selectedCol] = selectedSquare
         const piece = gameState.board[selectedRow][selectedCol].piece
 
-        if (piece && isValidMove(selectedRow, selectedCol, row, col, piece, gameState.board, gameState)) {
+        if (piece) {
           try {
-            // Send move to server via Socket.IO (if connected)
-            if (gameId && socketMakeMove && socketConnected) {
-              const move = {
-                from: `${String.fromCharCode(97 + selectedCol)}${8 - selectedRow}`,
-                to: `${String.fromCharCode(97 + col)}${8 - row}`,
-                promotion: undefined // Add promotion logic if needed
+            // Validate move using backend engine
+            const validation = await validateMoveWithBackend(selectedRow, selectedCol, row, col, gameState)
+            
+            if (validation.valid) {
+              // Send move to server via Socket.IO (if connected)
+              if (gameId && socketMakeMove && socketConnected) {
+                const move = {
+                  from: `${String.fromCharCode(97 + selectedCol)}${8 - selectedRow}`,
+                  to: `${String.fromCharCode(97 + col)}${8 - row}`,
+                  promotion: undefined // Add promotion logic if needed
+                }
+                socketMakeMove(gameId, move)
+              } else if (!socketConnected) {
+                // Make move locally only if not connected to server
+                const newGameState = makeMove(selectedRow, selectedCol, row, col, gameState)
+                setGameState(newGameState)
+                console.log('Socket not connected, playing locally only')
               }
-              socketMakeMove(gameId, move)
-            } else if (!socketConnected) {
-              // Make move locally only if not connected to server
-              const newGameState = makeMove(selectedRow, selectedCol, row, col, gameState)
-              setGameState(newGameState)
-              console.log('Socket not connected, playing locally only')
+            } else {
+              console.error("Invalid move:", validation.error)
             }
           } catch (error) {
-            console.error("Invalid move:", error)
+            console.error("Move validation error:", error)
           }
         }
 
@@ -243,6 +255,22 @@ export default function Game() {
       setNewMessage("")
     }
   }, [newMessage, gameId, sendChatMessage])
+
+  // Handle pawn promotion
+  const handlePromotionSelect = useCallback((piece: PieceType) => {
+    if (gameState.pendingPromotion) {
+      const newGameState = promotePawn(gameState, piece)
+      setGameState(newGameState)
+      setShowPromotionDialog(false)
+    }
+  }, [gameState])
+
+  // Check for pending promotion
+  useEffect(() => {
+    if (gameState.pendingPromotion) {
+      setShowPromotionDialog(true)
+    }
+  }, [gameState.pendingPromotion])
 
 
   return (
@@ -508,6 +536,16 @@ export default function Game() {
           </div>
         </div>
       </div>
+
+      {/* Promotion Dialog */}
+      {gameState.pendingPromotion && (
+        <PromotionDialog
+          isOpen={showPromotionDialog}
+          pieceColor={gameState.pendingPromotion.piece.color}
+          onSelect={handlePromotionSelect}
+          onClose={() => setShowPromotionDialog(false)}
+        />
+      )}
     </div>
   )
 }
