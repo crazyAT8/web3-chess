@@ -161,7 +161,7 @@ describe("ChessNFT", function () {
           description,
           imageURI,
           pieceURIs,
-          { value: mintFee }
+          { value: mintFee * 2n } // Chess set requires 2x mint fee
         )
       ).to.emit(chessNFT, "ChessSetMinted")
         .withArgs(1, user1.address, setName);
@@ -181,7 +181,7 @@ describe("ChessNFT", function () {
           "Test",
           "ipfs://QmSet",
           pieceURIs,
-          { value: mintFee }
+          { value: mintFee * 2n }
         )
       ).to.be.revertedWithCustomError(chessNFT, "InvalidPieceCount");
     });
@@ -206,7 +206,7 @@ describe("ChessNFT", function () {
     it("Should fail if not owner or approved", async function () {
       await expect(
         chessNFT.connect(user2).burnNFT(1)
-      ).to.be.revertedWithCustomError(chessNFT, "ERC721InsufficientApproval");
+      ).to.be.revertedWithCustomError(chessNFT, "NotAuthorizedToBurn");
     });
   });
 

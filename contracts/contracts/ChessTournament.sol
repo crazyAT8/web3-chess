@@ -17,8 +17,11 @@ contract ChessTournament is ReentrancyGuard, Ownable {
     error InvalidMaxPlayers();
     error StartTimeInPast();
     error TournamentNotInRegistration();
-    error AlreadyRegistered();
-    error IncorrectEntryFee();
+    error TournamentNotFound();
+    error PlayerAlreadyRegistered();
+    error EntryFeeMismatch();
+    error TournamentFull();
+    error NotEnoughPlayers();
     error TournamentNotActive();
     error MatchAlreadyComplete();
     error InvalidWinner();
@@ -82,6 +85,7 @@ contract ChessTournament is ReentrancyGuard, Ownable {
     event MatchCompleted(uint256 indexed tournamentId, uint256 indexed matchId, address winner);
     event TournamentFinished(uint256 indexed tournamentId, address winner, uint256 prize);
     event PrizeDistributed(uint256 indexed tournamentId, address player, uint256 amount);
+    event EmergencyWithdraw(address indexed owner, uint256 amount);
     event PlatformFeeUpdated(uint256 newFee);
     event EntryFeeLimitsUpdated(uint256 newMinFee, uint256 newMaxFee);
 
@@ -154,10 +158,11 @@ contract ChessTournament is ReentrancyGuard, Ownable {
      */
     function registerForTournament(uint256 tournamentId) external payable nonReentrant {
         Tournament storage tournament = tournaments[tournamentId];
+        if (tournament.tournamentId == 0) revert TournamentNotFound();
         if (tournament.state != TournamentState.REGISTRATION) revert TournamentNotInRegistration();
-        if (tournament.registeredPlayers[msg.sender]) revert AlreadyRegistered();
-        if (tournament.currentPlayers >= tournament.maxPlayers) revert TournamentNotInRegistration(); // Tournament full
-        if (msg.value != tournament.entryFee) revert IncorrectEntryFee();
+        if (tournament.registeredPlayers[msg.sender]) revert PlayerAlreadyRegistered();
+        if (tournament.currentPlayers >= tournament.maxPlayers) revert TournamentFull();
+        if (msg.value != tournament.entryFee) revert EntryFeeMismatch();
 
         tournament.registeredPlayers[msg.sender] = true;
         tournament.players.push(msg.sender);
@@ -180,9 +185,9 @@ contract ChessTournament is ReentrancyGuard, Ownable {
      */
     function startTournament(uint256 tournamentId) external onlyOwner {
         Tournament storage tournament = tournaments[tournamentId];
-        require(tournament.state == TournamentState.REGISTRATION, "Tournament not in registration");
-        require(tournament.currentPlayers >= 2, "Need at least 2 players");
-        require(block.timestamp >= tournament.startTime, "Tournament not ready to start");
+        if (tournament.state != TournamentState.REGISTRATION) revert TournamentNotInRegistration();
+        if (tournament.currentPlayers < 2) revert NotEnoughPlayers();
+        if (block.timestamp < tournament.startTime) revert TournamentNotInRegistration(); // Not ready to start
 
         _startTournament(tournamentId);
     }
@@ -505,6 +510,29 @@ contract ChessTournament is ReentrancyGuard, Ownable {
     }
 
     /**
+     * @dev Get tournament info (simplified version)
+     * @param tournamentId ID of the tournament
+     * @return name Tournament name
+     * @return entryFee Entry fee
+     * @return maxPlayers Maximum players
+     * @return playerCount Current player count
+     */
+    function getTournamentInfo(uint256 tournamentId) external view returns (
+        string memory name,
+        uint256 entryFee,
+        uint256 maxPlayers,
+        uint256 playerCount
+    ) {
+        Tournament storage tournament = tournaments[tournamentId];
+        return (
+            tournament.name,
+            tournament.entryFee,
+            tournament.maxPlayers,
+            tournament.currentPlayers
+        );
+    }
+
+    /**
      * @dev Set platform fee (owner only)
      * @param newFee New fee in basis points
      */
@@ -530,6 +558,8 @@ contract ChessTournament is ReentrancyGuard, Ownable {
      * @dev Emergency withdraw (owner only)
      */
     function emergencyWithdraw() external onlyOwner {
-        payable(owner()).transfer(address(this).balance);
+        uint256 amount = address(this).balance;
+        payable(owner()).transfer(amount);
+        emit EmergencyWithdraw(owner(), amount);
     }
 } 

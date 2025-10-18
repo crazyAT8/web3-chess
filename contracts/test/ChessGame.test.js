@@ -54,7 +54,7 @@ describe("ChessGame", function () {
       
       await expect(
         chessGame.connect(player1).createGame(stake, { value: parseEther("0.05") })
-      ).to.be.revertedWith("Stake amount must match sent value");
+      ).to.be.revertedWithCustomError(chessGame, "StakeAmountMismatch");
     });
 
     it("Should fail if stake is too low", async function () {
@@ -62,7 +62,7 @@ describe("ChessGame", function () {
       
       await expect(
         chessGame.connect(player1).createGame(stake, { value: stake })
-      ).to.be.revertedWith("Stake too low");
+      ).to.be.revertedWithCustomError(chessGame, "StakeTooLow");
     });
 
     it("Should fail if stake is too high", async function () {
@@ -70,7 +70,7 @@ describe("ChessGame", function () {
       
       await expect(
         chessGame.connect(player1).createGame(stake, { value: stake })
-      ).to.be.revertedWith("Stake too high");
+      ).to.be.revertedWithCustomError(chessGame, "StakeTooHigh");
     });
   });
 
@@ -218,8 +218,9 @@ describe("ChessGame", function () {
       const player2Games = await chessGame.getPlayerGames(player2.address);
       
       expect(player1Games.length).to.equal(1);
-      expect(player2Games.length).to.equal(0); // player2 hasn't joined yet
+      expect(player2Games.length).to.equal(1); // player2 has joined the game
       expect(player1Games[0]).to.equal(1);
+      expect(player2Games[0]).to.equal(1);
     });
   });
 
@@ -234,7 +235,7 @@ describe("ChessGame", function () {
     it("Should fail if non-owner tries to update platform fee", async function () {
       await expect(
         chessGame.connect(player1).setPlatformFee(30)
-      ).to.be.revertedWith("Ownable: caller is not the owner");
+      ).to.be.revertedWithCustomError(chessGame, "OwnableUnauthorizedAccount");
     });
 
     it("Should allow owner to update stake limits", async function () {

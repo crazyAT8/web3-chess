@@ -52,7 +52,7 @@ describe("ChessTournament", function () {
       const tournamentType = 0; // SINGLE_ELIMINATION
       const entryFee = parseEther("0.1");
       const maxPlayers = 8;
-      const startTime = Math.floor(Date.now() / 1000) + 3600; // 1 hour from now
+      const startTime = (await ethers.provider.getBlock('latest')).timestamp + 1; // 1 second from now // 1 hour from now
 
       await expect(
         chessTournament.connect(owner).createTournament(
@@ -84,7 +84,7 @@ describe("ChessTournament", function () {
           0,
           parseEther("0.1"),
           8,
-          Math.floor(Date.now() / 1000) + 3600
+          (await ethers.provider.getBlock('latest')).timestamp + 1
         )
       ).to.be.revertedWithCustomError(chessTournament, "OwnableUnauthorizedAccount");
     });
@@ -97,7 +97,7 @@ describe("ChessTournament", function () {
           0,
           parseEther("0.1"),
           8,
-          Math.floor(Date.now() / 1000) + 3600
+          (await ethers.provider.getBlock('latest')).timestamp + 1
         )
       ).to.be.revertedWithCustomError(chessTournament, "InvalidName");
     });
@@ -110,7 +110,7 @@ describe("ChessTournament", function () {
           0,
           parseEther("0.0005"),
           8,
-          Math.floor(Date.now() / 1000) + 3600
+          (await ethers.provider.getBlock('latest')).timestamp + 1
         )
       ).to.be.revertedWithCustomError(chessTournament, "EntryFeeTooLow");
     });
@@ -123,7 +123,7 @@ describe("ChessTournament", function () {
           0,
           parseEther("10"),
           8,
-          Math.floor(Date.now() / 1000) + 3600
+          (await ethers.provider.getBlock('latest')).timestamp + 1
         )
       ).to.be.revertedWithCustomError(chessTournament, "EntryFeeTooHigh");
     });
@@ -136,13 +136,13 @@ describe("ChessTournament", function () {
           0,
           parseEther("0.1"),
           1,
-          Math.floor(Date.now() / 1000) + 3600
+          (await ethers.provider.getBlock('latest')).timestamp + 1
         )
       ).to.be.revertedWithCustomError(chessTournament, "InvalidMaxPlayers");
     });
 
     it("Should fail if start time is in the past", async function () {
-      const pastTime = Math.floor(Date.now() / 1000) - 3600; // 1 hour ago
+      const pastTime = (await ethers.provider.getBlock('latest')).timestamp - 3600; // 1 hour ago
       
       await expect(
         chessTournament.connect(owner).createTournament(
@@ -163,7 +163,7 @@ describe("ChessTournament", function () {
     
     beforeEach(async function () {
       entryFee = parseEther("0.1");
-      const startTime = Math.floor(Date.now() / 1000) + 3600;
+      const startTime = (await ethers.provider.getBlock('latest')).timestamp + 1; // 1 second from now
       
       await chessTournament.connect(owner).createTournament(
         "Test Tournament",
@@ -181,9 +181,9 @@ describe("ChessTournament", function () {
         .to.emit(chessTournament, "PlayerRegistered")
         .withArgs(tournamentId, user1.address);
 
-      const tournament = await chessTournament.getTournament(tournamentId);
-      expect(tournament.players.length).to.equal(1);
-      expect(tournament.players[0]).to.equal(user1.address);
+      const players = await chessTournament.getTournamentPlayers(tournamentId);
+      expect(players.length).to.equal(1);
+      expect(players[0]).to.equal(user1.address);
     });
 
     it("Should fail if tournament doesn't exist", async function () {
@@ -226,7 +226,7 @@ describe("ChessTournament", function () {
         0,
         entryFee,
         2,
-        Math.floor(Date.now() / 1000) + 3600
+        (await ethers.provider.getBlock('latest')).timestamp + 1
       );
       
       // Register 2 players
@@ -246,7 +246,7 @@ describe("ChessTournament", function () {
     
     beforeEach(async function () {
       entryFee = parseEther("0.1");
-      const startTime = Math.floor(Date.now() / 1000) + 3600;
+      const startTime = (await ethers.provider.getBlock('latest')).timestamp + 1; // 1 second from now
       
       await chessTournament.connect(owner).createTournament(
         "Test Tournament",
@@ -307,7 +307,7 @@ describe("ChessTournament", function () {
         0,
         entryFee,
         4,
-        Math.floor(Date.now() / 1000) + 3600
+        (await ethers.provider.getBlock('latest')).timestamp + 1
       );
       
       await chessTournament.connect(user1).registerForTournament(smallTournamentId, { value: entryFee });
@@ -324,7 +324,7 @@ describe("ChessTournament", function () {
     
     beforeEach(async function () {
       entryFee = parseEther("0.1");
-      const startTime = Math.floor(Date.now() / 1000) + 3600;
+      const startTime = (await ethers.provider.getBlock('latest')).timestamp + 1; // 1 second from now
       
       await chessTournament.connect(owner).createTournament(
         "Test Tournament",
@@ -413,7 +413,7 @@ describe("ChessTournament", function () {
     
     beforeEach(async function () {
       entryFee = parseEther("0.1");
-      const startTime = Math.floor(Date.now() / 1000) + 3600;
+      const startTime = (await ethers.provider.getBlock('latest')).timestamp + 1; // 1 second from now
       
       await chessTournament.connect(owner).createTournament(
         "Test Tournament",
@@ -462,7 +462,7 @@ describe("ChessTournament", function () {
     
     beforeEach(async function () {
       entryFee = parseEther("0.1");
-      const startTime = Math.floor(Date.now() / 1000) + 3600;
+      const startTime = (await ethers.provider.getBlock('latest')).timestamp + 1; // 1 second from now
       
       await chessTournament.connect(owner).createTournament(
         "Test Tournament",
