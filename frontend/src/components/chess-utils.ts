@@ -737,6 +737,40 @@ export const FENToBoard = (fen: string): GameState => {
   }
 }
 
+// Enhanced function to create game state from backend data
+export const createGameStateFromBackend = (gameData: any): GameState => {
+  const { current_fen, moves, current_turn, status, is_check, is_checkmate, is_stalemate, is_draw } = gameData
+  
+  // Parse FEN to get board state
+  const gameState = FENToBoard(current_fen || 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')
+  
+  // Update game status based on backend data
+  if (is_checkmate) {
+    gameState.gameStatus = "checkmate"
+  } else if (is_stalemate) {
+    gameState.gameStatus = "stalemate"
+  } else if (is_draw) {
+    gameState.gameStatus = "draw"
+  } else if (is_check) {
+    gameState.gameStatus = "check"
+  } else {
+    gameState.gameStatus = "playing"
+  }
+  
+  // Convert backend moves to frontend move format
+  if (moves && Array.isArray(moves)) {
+    gameState.moveHistory = moves.map((move: any, index: number) => ({
+      from: { row: 8 - parseInt(move.from[1]), col: move.from.charCodeAt(0) - 97 },
+      to: { row: 8 - parseInt(move.to[1]), col: move.to.charCodeAt(0) - 97 },
+      piece: { type: move.piece, color: move.turn === 'white' ? 'white' : 'black' },
+      san: move.san || `${move.from}-${move.to}`,
+      timestamp: new Date(move.timestamp).getTime() || Date.now()
+    }))
+  }
+  
+  return gameState
+}
+
 export const getValidMoves = (row: number, col: number, gameState: GameState): Array<{row: number, col: number}> => {
   const piece = gameState.board[row][col].piece
   if (!piece || piece.color !== gameState.currentPlayer) return []

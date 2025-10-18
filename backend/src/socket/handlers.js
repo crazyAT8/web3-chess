@@ -146,8 +146,20 @@ const setupSocketHandlers = (io) => {
     // Handle making a move
     socket.on('make-move', async (data) => {
       try {
+        // Validate input data
+        if (!data || !data.gameId || !data.move) {
+          socket.emit('error', { message: 'Invalid move data provided' });
+          return;
+        }
+
         const { gameId, move } = data;
         
+        // Validate move structure
+        if (!move.from || !move.to || typeof move.from !== 'string' || typeof move.to !== 'string') {
+          socket.emit('error', { message: 'Invalid move format' });
+          return;
+        }
+
         const game = await Game.findByPk(gameId);
         if (!game || game.status !== 'active') {
           socket.emit('error', { message: 'Game not found or not active' });
@@ -184,6 +196,17 @@ const setupSocketHandlers = (io) => {
           return;
         }
 
+        // Check for move conflicts (simultaneous moves)
+        const currentTime = Date.now();
+        const lastMoveTime = game.last_move_timestamp || 0;
+        const timeDiff = currentTime - lastMoveTime;
+        
+        // If moves are too close together, there might be a conflict
+        if (timeDiff < 100) { // 100ms threshold
+          console.log('Potential move conflict detected, validating...');
+          // In a real implementation, you might want to queue moves or use a more sophisticated conflict resolution
+        }
+
         // Make the move
         const moveResult = chessGame.makeMove(moveObj);
         
@@ -209,6 +232,7 @@ const setupSocketHandlers = (io) => {
         // Update game state
         game.current_fen = moveResult.fen;
         game.current_turn = moveResult.turn === 'w' ? 'white' : 'black';
+        game.last_move_timestamp = currentTime;
 
         // Check for game end conditions
         if (moveResult.isGameOver) {
@@ -242,6 +266,24 @@ const setupSocketHandlers = (io) => {
             isCheckmate: moveResult.inCheckmate,
             isStalemate: moveResult.inStalemate,
             isDraw: moveResult.inDraw
+          }
+        });
+
+        // Also send updated game state to all players
+        io.to(`game:${gameId}`).emit('game-state-updated', {
+          game: {
+            id: game.id,
+            current_fen: game.current_fen,
+            current_turn: game.current_turn,
+            status: game.status,
+            result: game.result,
+            moves: game.moves,
+            is_check: moveResult.inCheck,
+            is_checkmate: moveResult.inCheckmate,
+            is_stalemate: moveResult.inStalemate,
+            is_draw: moveResult.inDraw,
+            white_time_remaining: game.white_time_remaining,
+            black_time_remaining: game.black_time_remaining
           }
         });
 

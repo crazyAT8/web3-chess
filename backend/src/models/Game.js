@@ -138,6 +138,10 @@ const Game = sequelize.define('Game', {
   analysis_data: {
     type: DataTypes.JSONB,
     defaultValue: {}
+  },
+  last_move_timestamp: {
+    type: DataTypes.BIGINT,
+    allowNull: true
   }
 }, {
   tableName: 'games',

@@ -17,6 +17,7 @@ import {
   getPieceSymbol, 
   formatTime,
   FENToBoard,
+  createGameStateFromBackend,
   type GameState
 } from "@/components/chess-utils"
 import { useSocket } from "@/contexts/SocketContext"
@@ -33,6 +34,7 @@ export default function Game() {
   const [isConnected] = useState(false)
   const [chatMessages, setChatMessages] = useState<any[]>([])
   const [newMessage, setNewMessage] = useState("")
+  const [lastMoveTimestamp, setLastMoveTimestamp] = useState<number>(0)
   
   const { socket, isConnected: socketConnected, joinGame, makeMove: socketMakeMove, sendChatMessage } = useSocket()
 
@@ -43,23 +45,52 @@ export default function Game() {
     const handleMoveMade = (data: any) => {
       console.log('Move received:', data)
       // Update game state with the received move
-      if (data.gameState.currentFen) {
-        const newGameState = FENToBoard(data.gameState.currentFen)
-        setGameState(newGameState)
+      if (data.gameState?.currentFen) {
+        try {
+          const newGameState = FENToBoard(data.gameState.currentFen)
+          setGameState(newGameState)
+          
+          // Update last move timestamp
+          if (data.timestamp) {
+            setLastMoveTimestamp(new Date(data.timestamp).getTime())
+          }
+        } catch (error) {
+          console.error('Error parsing FEN from move:', error)
+        }
       }
     }
 
     const handleGameState = (data: any) => {
       console.log('Game state received:', data)
-      if (data.game.current_fen) {
-        const newGameState = FENToBoard(data.game.current_fen)
-        setGameState(newGameState)
+      if (data.game) {
+        try {
+          const newGameState = createGameStateFromBackend(data.game)
+          setGameState(newGameState)
+        } catch (error) {
+          console.error('Error creating game state from backend data:', error)
+        }
+      }
+    }
+
+    const handleGameStateUpdated = (data: any) => {
+      console.log('Game state updated:', data)
+      if (data.game) {
+        try {
+          const newGameState = createGameStateFromBackend(data.game)
+          setGameState(newGameState)
+        } catch (error) {
+          console.error('Error creating game state from updated data:', error)
+        }
       }
     }
 
     const handleGameEnded = (data: any) => {
       console.log('Game ended:', data)
-      // Handle game end
+      // Update game status to reflect the end
+      setGameState(prev => ({
+        ...prev,
+        gameStatus: data.result === 'draw' ? 'draw' : 'checkmate'
+      }))
     }
 
     const handleChatMessage = (data: any) => {
@@ -70,20 +101,78 @@ export default function Game() {
       console.error('Socket error:', error)
     }
 
+    const handlePlayerJoined = (data: any) => {
+      console.log('Player joined:', data)
+    }
+
+    const handlePlayerLeft = (data: any) => {
+      console.log('Player left:', data)
+    }
+
+    const handlePlayerDisconnected = (data: any) => {
+      console.log('Player disconnected:', data)
+    }
+
+    // Register all event listeners
     socket.on('move-made', handleMoveMade)
     socket.on('game-state', handleGameState)
+    socket.on('game-state-updated', handleGameStateUpdated)
     socket.on('game-ended', handleGameEnded)
     socket.on('chat-message', handleChatMessage)
     socket.on('error', handleError)
+    socket.on('player-joined', handlePlayerJoined)
+    socket.on('player-left', handlePlayerLeft)
+    socket.on('player-disconnected', handlePlayerDisconnected)
 
     return () => {
+      // Clean up all event listeners
       socket.off('move-made', handleMoveMade)
       socket.off('game-state', handleGameState)
+      socket.off('game-state-updated', handleGameStateUpdated)
       socket.off('game-ended', handleGameEnded)
       socket.off('chat-message', handleChatMessage)
       socket.off('error', handleError)
+      socket.off('player-joined', handlePlayerJoined)
+      socket.off('player-left', handlePlayerLeft)
+      socket.off('player-disconnected', handlePlayerDisconnected)
     }
   }, [socket])
+
+  // Game state persistence
+  useEffect(() => {
+    if (gameId) {
+      const gameStateKey = `chess-game-${gameId}`
+      localStorage.setItem(gameStateKey, JSON.stringify({
+        gameState,
+        lastMoveTimestamp,
+        chatMessages
+      }))
+    }
+  }, [gameState, lastMoveTimestamp, chatMessages, gameId])
+
+  // Load game state from localStorage on mount
+  useEffect(() => {
+    if (gameId) {
+      const gameStateKey = `chess-game-${gameId}`
+      const savedState = localStorage.getItem(gameStateKey)
+      if (savedState) {
+        try {
+          const parsed = JSON.parse(savedState)
+          if (parsed.gameState) {
+            setGameState(parsed.gameState)
+          }
+          if (parsed.chatMessages) {
+            setChatMessages(parsed.chatMessages)
+          }
+          if (parsed.lastMoveTimestamp) {
+            setLastMoveTimestamp(parsed.lastMoveTimestamp)
+          }
+        } catch (error) {
+          console.error('Error loading saved game state:', error)
+        }
+      }
+    }
+  }, [gameId])
 
   // Join game when component mounts (for demo purposes)
   useEffect(() => {
@@ -95,29 +184,6 @@ export default function Game() {
     }
   }, [socketConnected, gameId, joinGame])
 
-  // Handle move made from server
-  useEffect(() => {
-    if (socket) {
-      const handleMoveMade = (data: any) => {
-        console.log('Move received from server:', data)
-        // Update game state with the received move
-        if (data.gameState?.currentFen) {
-          try {
-            const newGameState = FENToBoard(data.gameState.currentFen)
-            setGameState(newGameState)
-          } catch (error) {
-            console.error('Error parsing FEN:', error)
-          }
-        }
-      }
-
-      socket.on('move-made', handleMoveMade)
-      return () => {
-        socket.off('move-made', handleMoveMade)
-      }
-    }
-  }, [socket])
-
   const handleSquareClick = useCallback(
     (row: number, col: number) => {
       if (selectedSquare) {
@@ -126,10 +192,6 @@ export default function Game() {
 
         if (piece && isValidMove(selectedRow, selectedCol, row, col, piece, gameState.board, gameState)) {
           try {
-            // Make move locally first for immediate feedback
-            const newGameState = makeMove(selectedRow, selectedCol, row, col, gameState)
-            setGameState(newGameState)
-            
             // Send move to server via Socket.IO (if connected)
             if (gameId && socketMakeMove && socketConnected) {
               const move = {
@@ -139,6 +201,9 @@ export default function Game() {
               }
               socketMakeMove(gameId, move)
             } else if (!socketConnected) {
+              // Make move locally only if not connected to server
+              const newGameState = makeMove(selectedRow, selectedCol, row, col, gameState)
+              setGameState(newGameState)
               console.log('Socket not connected, playing locally only')
             }
           } catch (error) {
@@ -191,7 +256,7 @@ export default function Game() {
           </Link>
           <div className="flex items-center space-x-4">
             <Badge className={socketConnected ? "bg-green-600/20 text-green-300 border-green-600/30" : "bg-red-600/20 text-red-300 border-red-600/30"}>
-              {socketConnected ? "Connected" : "Disconnected"}
+              {socketConnected ? "🟢 Connected" : "🔴 Disconnected"}
             </Badge>
             <Badge className="bg-green-600/20 text-green-300 border-green-600/30">Live Game</Badge>
             <Button 
