@@ -19,6 +19,7 @@ npm install
 ### 2. Configure Environment
 
 Copy the example environment file and update with your database credentials:
+
 ```bash
 cp .env.example .env
 ```
@@ -36,6 +37,7 @@ DB_PASSWORD=your_password
 ### 3. Setup Database
 
 Run the complete database setup (migration + seeding):
+
 ```bash
 npm run setup-db
 ```
