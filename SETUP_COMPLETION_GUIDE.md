@@ -3,14 +3,17 @@
 ## 🚨 Critical Issues Fixed
 
 ### ✅ 1. Contract Addresses Updated
+
 - Updated `frontend/env.local` with actual deployed Sepolia contract addresses
 - All contracts now point to correct deployed instances
 
 ### ✅ 2. Contract ABIs Implemented
+
 - Replaced empty ABI arrays with functional contract interfaces
 - Added all necessary functions for ChessToken, ChessNFT, ChessGame, and ChessTournament
 
 ### ✅ 3. Contract Testing System
+
 - Created `ContractTester` component for frontend contract validation
 - Added backend contract integration test script
 - Integrated testing into the game page
@@ -20,6 +23,7 @@
 ### Phase 1: Backend Setup (Immediate)
 
 #### 1.1 Database Configuration
+
 ```bash
 # Navigate to backend directory
 cd backend
@@ -33,6 +37,7 @@ cp env.template .env
 ```
 
 #### 1.2 Install and Start PostgreSQL
+
 ```bash
 # Windows (using Chocolatey)
 choco install postgresql
@@ -43,6 +48,7 @@ choco install postgresql
 ```
 
 #### 1.3 Start Backend Server
+
 ```bash
 cd backend
 npm install
@@ -50,6 +56,7 @@ npm run dev
 ```
 
 #### 1.4 Test Database Connection
+
 ```bash
 cd backend
 node test-db.js
@@ -58,12 +65,14 @@ node test-db.js
 ### Phase 2: Frontend Testing (Immediate)
 
 #### 2.1 Test Contract Connectivity
+
 1. Start the frontend: `cd frontend && npm run dev`
 2. Navigate to `/game` page
 3. Connect your wallet (MetaMask with Sepolia network)
 4. Use the "Contract Integration Tester" to verify all contracts work
 
 #### 2.2 Verify Contract Functions
+
 - ✅ ChessToken: name, symbol, balanceOf
 - ✅ ChessNFT: name, symbol, balanceOf
 - ✅ ChessGame: minStake, maxStake, createGame
@@ -72,18 +81,21 @@ node test-db.js
 ### Phase 3: Smart Contract Integration (High Priority)
 
 #### 3.1 Test Deployed Contracts
+
 ```bash
 cd contracts
 npm run test:deployed
 ```
 
 #### 3.2 Verify Contract Functions
+
 ```bash
 # Test basic functionality
 npx hardhat run scripts/test-contract-integration.js --network sepolia
 ```
 
 #### 3.3 Update Contract ABIs (if needed)
+
 If contract functions differ from implemented ABIs:
 1. Compile contracts: `npm run compile`
 2. Copy actual ABIs from `artifacts/` directory
@@ -92,16 +104,19 @@ If contract functions differ from implemented ABIs:
 ### Phase 4: Game Logic Implementation (Medium Priority)
 
 #### 4.1 Chess Game Engine
+
 - Implement proper chess move validation
 - Add game state management
 - Integrate with smart contract game states
 
 #### 4.2 Real-time Gameplay
+
 - Connect Socket.IO for real-time moves
 - Implement game synchronization
 - Add move validation and game rules
 
 #### 4.3 Game History and Persistence
+
 - Store game moves in database
 - Implement game replay functionality
 - Add game statistics tracking
@@ -109,11 +124,13 @@ If contract functions differ from implemented ABIs:
 ### Phase 5: NFT and Token Integration (Medium Priority)
 
 #### 5.1 NFT Minting
+
 - Implement avatar minting functionality
 - Add metadata storage (IPFS integration)
 - Create NFT marketplace features
 
 #### 5.2 Token Economics
+
 - Implement staking rewards
 - Add tournament prize distribution
 - Create token utility features
@@ -121,11 +138,13 @@ If contract functions differ from implemented ABIs:
 ### Phase 6: Tournament System (Low Priority)
 
 #### 6.1 Tournament Management
+
 - Create tournament registration
 - Implement bracket system
 - Add prize pool management
 
 #### 6.2 Leaderboards
+
 - Implement ELO rating system
 - Create global and tournament leaderboards
 - Add achievement system
@@ -133,12 +152,14 @@ If contract functions differ from implemented ABIs:
 ## 🧪 Testing Checklist
 
 ### Backend Tests
+
 - [ ] Database connection established
 - [ ] API endpoints responding
 - [ ] Socket.IO connections working
 - [ ] Authentication middleware functional
 
 ### Smart Contract Tests
+
 - [ ] All contracts deployed and verified
 - [ ] Basic functions working (name, symbol, etc.)
 - [ ] Game creation and joining functional
@@ -146,6 +167,7 @@ If contract functions differ from implemented ABIs:
 - [ ] Error handling proper
 
 ### Frontend Tests
+
 - [ ] Wallet connection working
 - [ ] Contract reading functional
 - [ ] Contract writing functional
@@ -155,18 +177,21 @@ If contract functions differ from implemented ABIs:
 ## 🚀 Deployment Checklist
 
 ### Frontend
+
 - [ ] Environment variables configured
 - [ ] Contract addresses correct
 - [ ] Build successful
 - [ ] Deployed to hosting platform
 
 ### Backend
+
 - [ ] Environment variables configured
 - [ ] Database accessible
 - [ ] Redis configured (if using)
 - [ ] Deployed to hosting platform
 
 ### Smart Contracts
+
 - [ ] Verified on Etherscan
 - [ ] Tested on testnet
 - [ ] Ready for mainnet deployment
@@ -174,18 +199,21 @@ If contract functions differ from implemented ABIs:
 ## 🔍 Troubleshooting Common Issues
 
 ### Contract Connection Errors
+
 1. Check network configuration in MetaMask
 2. Verify contract addresses in environment
 3. Ensure ABIs match deployed contracts
 4. Check RPC endpoint availability
 
 ### Database Connection Issues
+
 1. Verify PostgreSQL is running
 2. Check database credentials
 3. Ensure database exists
 4. Check firewall settings
 
 ### Frontend Build Errors
+
 1. Clear `.next` directory
 2. Reinstall dependencies
 3. Check TypeScript errors
@@ -211,6 +239,7 @@ If contract functions differ from implemented ABIs:
 ## 🆘 Getting Help
 
 If you encounter issues:
+
 1. Check the console for error messages
 2. Verify all environment variables are set
 3. Test contracts individually using the test scripts
